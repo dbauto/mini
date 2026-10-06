@@ -137,8 +137,8 @@
       <a role="tab" href="${Q.UI.docsView && Q.UI.docsView.startsWith('#/documents') ? Q.UI.docsView : '#/documents'}" aria-selected="${cur === 'library'}">${icon('library')}Library<span class="muted small tnum">${Q.S.documents.length}</span></a>
       <a role="tab" href="#/review" aria-selected="${cur === 'routing'}">${icon('route')}Routing<span class="muted small tnum">${all}</span>${mine ? `<span class="tab-note" style="color:var(--accent)">${mine} for you</span>` : ''}</a></div>`;
   };
-  const docHead = (crumbs = null) => Q.pageHead({ crumbs, title: 'Documented Information', sub: 'Controlled documents (ISO 9001 clause 7.5). Public and Internal documents are uploaded to iQMS; Confidential documents stay in SharePoint and are registered by link and description.',
-    actions: `<button class="btn primary" type="button" data-action="connect-doc">${icon('file-plus')}Register Document</button>` });
+  const docHead = (crumbs = null) => Q.pageHead({ crumbs, title: 'Documented Information', sub: 'Controlled documents (ISO 9001 clause 7.5). The QMS manages metadata, revision workflow and audit history while the actual document remains in the client’s approved Microsoft 365 repository.',
+    actions: `<button class="btn primary" type="button" data-action="connect-doc">${icon('file-plus')}New / Revise Document</button>` });
   /* ---------- Saved views on the Library ----------
    * One card holds the view tabs, the toolbar and the table (see Q.viewPage in
    * saved-views.js). The views the mock shipped with are seeded defaults.        */
@@ -605,14 +605,14 @@
     if (!w) return { title: 'Review not found', nav: 'review', html: Q.pageHead({ title: 'This review is no longer active', crumbs: [['Documented Information', '#/documents'], ['Routing', '#/review'], ['Not found']], sub: 'It may have been published or withdrawn. Published revisions are in the document’s revision history.' }) + `<a class="btn" href="#/review">Back to Routing</a>` };
     const d = Q.doc(w.doc), me = Q.me();
     const rev = (Q.S.revisions[d.id] || []).find(r => r.rev === w.rev) || { summary: '' };
-    const steps = [['review', 'Review', 'Check content'], ['approval', 'Approval', 'Authorize revision'], ['publication', 'Publication', 'Make it the active version']];
+    const steps = [['review', 'Technical Review', 'Document Controller checks content'], ['approval', 'Approval', 'Authorize revision'], ['publication', 'Publish', 'Make it the active version']];
     const idx = steps.findIndex(s => s[0] === w.stage);
     const myReview = w.stage === 'review' && !w.changesRequested && w.reviewers.find(r => r.who === me && r.state === 'Pending');
     const myApproval = w.stage === 'approval' && w.approvers.find(r => r.who === me && r.state === 'Pending');
     const myPublish = w.stage === 'publication' && w.publisher === me;
     const waiting = Q.wfAssignees(w).map(Q.pname).join(', ');
     let bar;
-    if (myReview) bar = `<span class="note">You are a reviewer. Check the content, then complete your review.</span><button class="btn" type="button" data-rv="changes">Request Changes</button><button class="btn primary" type="button" data-rv="complete">Complete Review</button>`;
+    if (myReview) bar = `<span class="note">You are the technical reviewer. Check the controlled-document content and metadata, then complete Technical Review.</span><button class="btn" type="button" data-rv="changes">Request Changes</button><button class="btn primary" type="button" data-rv="complete">Complete Technical Review</button>`;
     else if (myApproval) bar = `<span class="note">Reviews are complete. Approving authorizes Rev ${esc(w.rev)}; publication follows.</span><button class="btn" type="button" data-rv="changes">Request Changes</button><button class="btn primary" type="button" data-rv="approve">Approve</button>`;
     else if (myPublish) bar = `<span class="note">Approved by ${esc(w.approvers.map(a => Q.pname(a.who)).join(', '))}. Publishing makes Rev ${esc(w.rev)} the active controlled version.</span><button class="btn primary" type="button" data-rv="publish">${icon('send')}Publish</button>`;
     else if (w.changesRequested) bar = `<span class="note">${icon('info')} Changes requested — waiting for ${esc(Q.pname(w.startedBy))} to submit an updated draft.</span><button class="btn" type="button" data-action="toast" data-title="Reminder sent" data-msg="Reminder sent to ${esc(Q.pname(w.startedBy))}.">Send Reminder</button>`;
@@ -630,7 +630,7 @@
             ${w.stage !== 'review' || w.changesRequested ? Q.lockCallout(w) : ''}
             <ol class="stepper" aria-label="Workflow stages">${steps.map(([k, l, s], i) => `<li class="${w.changesRequested && i === 0 ? 'changes' : i < idx ? 'done' : i === idx ? 'current' : ''}" ${i === idx ? 'aria-current="step"' : ''}><span class="dot">${i < idx ? icon('check') : i + 1}</span><span><b>${l}</b><span>${w.changesRequested && i === 0 ? 'Changes requested' : s}</span></span></li>`).join('')}</ol>
             <section class="panel"><div class="panel-head"><h2>Change summary</h2></div><div class="panel-pad"><p>${esc(rev.summary || 'No summary provided.')}</p><dl class="dl-list" style="margin-top:12px"><dt>Started by</dt><dd>${Q.who(w.startedBy)} · ${Q.fmt(w.started)}</dd><dt>Due</dt><dd>${Q.dueDate(w.due)}</dd><dt>Effective</dt><dd>On publication</dd><dt>Classification</dt><dd>${Q.classChip(d)}</dd><dt>File</dt><dd>${d.source.state !== 'connected' ? `<span class="src-bad">${icon('triangle-alert')}Access unavailable</span> ` : uploaded(d) ? `<span class="src-ok">${icon('circle-check')}Stored in iQMS</span> ` : `<span class="src-lock">${icon('lock')}Link only</span> `}${esc(d.source.file)}</dd></dl></div></section>
-            <section class="panel"><div class="panel-head"><h2>Reviewers &amp; approvers</h2></div><ul class="people-list">${w.reviewers.map(x => person(x, 'Reviewer')).join('')}${w.approvers.map(x => person(x, 'Approver')).join('')}<li><span class="avatar sm">${esc(Q.initials(w.publisher))}</span><div class="p-main">${Q.who(w.publisher)}<span>Publisher · ${esc(Q.person(w.publisher).title)}</span></div>${Q.st(w.stage === 'publication' ? 'Pending' : 'Not started', w.stage === 'publication' ? 'info' : 'neutral')}</li></ul></section>
+            <section class="panel"><div class="panel-head"><h2>Reviewers &amp; approvers</h2></div><ul class="people-list">${w.reviewers.map(x => person(x, 'Technical Reviewer')).join('')}${w.approvers.map(x => person(x, 'Approver')).join('')}<li><span class="avatar sm">${esc(Q.initials(w.publisher))}</span><div class="p-main">${Q.who(w.publisher)}<span>Publisher · ${esc(Q.person(w.publisher).title)}</span></div>${Q.st(w.stage === 'publication' ? 'Pending' : 'Not started', w.stage === 'publication' ? 'info' : 'neutral')}</li></ul></section>
             <section class="panel"><div class="panel-head"><h2>Comments</h2><span class="muted small">${w.comments.length}</span></div>
               <ul class="comments">${w.comments.map(c => `<li><span class="avatar sm">${esc(Q.initials(c.who))}</span><div class="c-body"><div class="c-meta">${Q.who(c.who)} · ${Q.fmt(c.date)}</div>${esc(c.text)}</div></li>`).join('') || '<li class="muted small">No comments yet.</li>'}</ul>
               <form class="comment-form" id="commentForm"><label class="sr-only" for="cText">Add a comment</label><textarea class="textarea" id="cText" placeholder="Add a comment for the audit trail"></textarea><button class="btn" type="submit">Comment</button></form></section>
@@ -690,8 +690,8 @@
     if (kind === 'complete') {
       const r = w.reviewers.find(x => x.who === me); r.state = 'Completed'; r.date = today;
       if (w.reviewers.every(x => x.state === 'Completed')) { w.stage = 'approval'; w.approvers.forEach(a => { a.state = 'Pending'; }); d.status = 'Approval in Progress'; }
-      log(`completed review of ${d.title} Rev ${w.rev}`);
-      done('Review completed', w.stage === 'approval' ? `All reviews complete. Sent to ${w.approvers.map(a => Q.pname(a.who)).join(', ')} for approval.` : 'Waiting for the remaining reviewers.');
+      log(`completed technical review of ${d.title} Rev ${w.rev}`);
+      done('Technical Review completed', w.stage === 'approval' ? `Technical Review is complete. Sent to ${w.approvers.map(a => Q.pname(a.who)).join(', ')} for approval.` : 'Waiting for the remaining technical reviewers.');
     } else if (kind === 'approve') {
       const a = w.approvers.find(x => x.who === me); a.state = 'Approved'; a.date = today;
       if (w.approvers.every(x => x.state === 'Approved')) { w.stage = 'publication'; d.status = 'Approved'; }
