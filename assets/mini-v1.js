@@ -26,7 +26,7 @@
       `<div class="v1-nav-label">Core module · V1</div>` +
       v1Item('#/overview', 'overview', 'layout-dashboard', 'Overview') +
       v1Item('#/documents', 'documents', 'files', 'Document Control') +
-      v1Item('#/review', 'review', 'file-check-2', 'Documents in Review',
+      v1Item('#/review', 'review', 'file-check', 'Documents in Review',
         mine ? `<span class="count" title="${mine} awaiting your action">${mine}</span>` : '') +
       v1Item('#/qms/processes', 'qms-processes', 'workflow', 'ISO QMS Structure');
     foot.innerHTML = v1Item('#/settings', 'settings', 'settings', 'Settings');
@@ -75,7 +75,7 @@
     const mine = Q.myWorkflows().length;
     return `<div class="tabs page-tabs" role="tablist" aria-label="Document control">
       <a role="tab" href="${Q.UI.docsView && Q.UI.docsView.startsWith('#/documents') ? Q.UI.docsView : '#/documents'}" aria-selected="${cur === 'library'}">${icon('library')}Document Library<span class="muted small tnum">${Q.S.documents.length}</span></a>
-      <a role="tab" href="#/review" aria-selected="${cur === 'routing'}">${icon('file-check-2')}Documents in Review<span class="muted small tnum">${Q.S.workflows.length}</span>${mine ? `<span class="tab-note">${mine} for you</span>` : ''}</a>
+      <a role="tab" href="#/review" aria-selected="${cur === 'routing'}">${icon('file-check')}Documents in Review<span class="muted small tnum">${Q.S.workflows.length}</span>${mine ? `<span class="tab-note">${mine} for you</span>` : ''}</a>
     </div>`;
   };
 
@@ -116,7 +116,7 @@
     const stats = [
       ['Published documents', published, 'circle-check', 'Controlled and active'],
       ['Technical review', technical, 'search-check', 'With Document Control'],
-      ['Changes requested', changes, 'message-square-warning', 'Waiting for revision'],
+      ['Changes requested', changes, 'message-square', 'Waiting for revision'],
       ['Approval', approval, 'stamp', 'Awaiting authorization'],
       ['Ready to publish', publish, 'send', 'Approved revisions'],
       ['Review overdue', overdue, 'calendar-clock', 'Periodic review required']
@@ -139,7 +139,7 @@
     const html = Q.pageHead({
       title: 'Document Control Overview',
       sub: 'V1 focuses on controlled documents first. Client-specific QMS modules are added only after their functions and UI are approved.',
-      actions: `<button class="btn primary" type="button" data-action="connect-doc">${icon('file-plus-2')}New / Revise Document</button>`
+      actions: `<button class="btn primary" type="button" data-action="connect-doc">${icon('file-plus')}New / Revise Document</button>`
     }) + `
       <div class="v1-phase-banner">
         <div><span class="v1-kicker">APPROVED CORE SCOPE</span><h2>Document Management + ISO QMS foundation</h2>
@@ -231,7 +231,7 @@
         crumbs: [['Document Control', '#/documents'], ['Documents in Review']],
         title: 'Documents in Review',
         sub: 'Operational work queue for Technical Review → Approval → Publish.',
-        actions: `<button class="btn primary" type="button" data-action="connect-doc">${icon('file-plus-2')}New / Revise Document</button>`
+        actions: `<button class="btn primary" type="button" data-action="connect-doc">${icon('file-plus')}New / Revise Document</button>`
       }) + Q.docTabs('routing') + `<div class="v1-queue-note">${icon('info')}A second workflow cannot start while a revision is already in review or approval.</div>` + v1ReviewTable(q.show || (currentUserWork().length ? 'mine' : 'all'))
     };
   };
@@ -243,7 +243,7 @@
       title: 'New / Revise Document',
       sub: 'Choose what you are doing. Both paths use the same controlled workflow.',
       body: `<div class="modal-body"><div class="v1-choice-grid">
-        <button class="v1-choice" type="button" data-v1-new>${icon('file-plus-2')}<span><b>Create New Document</b><small>Create Rev 00 and register its Microsoft 365 link.</small></span>${icon('chevron-right')}</button>
+        <button class="v1-choice" type="button" data-v1-new>${icon('file-plus')}<span><b>Create New Document</b><small>Create Rev 00 and register its Microsoft 365 link.</small></span>${icon('chevron-right')}</button>
         <button class="v1-choice" type="button" data-v1-revise>${icon('git-branch-plus')}<span><b>Revise Existing Document</b><small>Select a published controlled document and create its next revision.</small></span>${icon('chevron-right')}</button>
       </div><div class="callout" style="margin-top:16px">${icon('shield-check')}<span>The QMS stores document metadata, workflow history and the approved link. The actual file remains in the client's Microsoft 365 environment.</span></div></div>`,
       foot: `<button class="btn" type="button" data-close>Cancel</button>`
@@ -377,7 +377,7 @@
       doc.workingRev = next;
       doc.status = 'Draft';
       doc.updated = Q.today();
-      doc.pendingSource = { ...src };
+      doc.pendingSource = { ...src };\n      doc.source = { ...src };
       Q.S.revisions[doc.id].push({
         rev: next, summary: v.summary.trim(), reason: v.reason, author: v.author, preparedBy: v.author,
         date: Q.today(), reviewers: [], approval: '', published: null, state: 'Draft', source: { ...src }
@@ -395,7 +395,7 @@
   Q.actions['request-review'] = d => {
     const doc = Q.doc(d.id), chk = Q.canStartWorkflow(doc);
     if (!chk.ok) { Q.toast('Technical Review not started', chk.why); return; }
-    const controller = Q.S.people?.nina ? 'nina' : (Object.keys(Q.S.people || {}).find(id => /document control/i.test(Q.person(id).title)) || Q.me());
+    const controller = 'nina';
     const processOwner = Q.proc(Q.rootId(doc.process))?.owner;
     const defaultApprover = processOwner && processOwner !== controller ? processOwner : 'maria';
     const m = Q.openModal({
@@ -433,7 +433,7 @@
   Q.docSelectionActions = d => {
     const w = Q.wfForDoc(d.id), rev = Q.canCreateRevision(d), wfOk = Q.canStartWorkflow(d);
     return `<button class="btn sm primary" type="button" data-action="open-doc" data-id="${esc(d.id)}">${icon('file-text')}Open Document</button>
-      ${w ? `<button class="btn sm" type="button" data-action="open-review" data-id="${esc(w.id)}">${icon('file-check-2')}Open Review</button>` : ''}
+      ${w ? `<button class="btn sm" type="button" data-action="open-review" data-id="${esc(w.id)}">${icon('file-check')}Open Review</button>` : ''}
       <button class="btn sm" type="button" data-action="create-revision" data-id="${esc(d.id)}" ${rev.ok ? '' : 'disabled'} title="${esc(rev.why || '')}">Create Revision</button>
       <button class="btn sm" type="button" data-action="request-review" data-id="${esc(d.id)}" ${wfOk.ok ? '' : 'disabled'} title="${esc(wfOk.why || '')}">Submit for Technical Review</button>`;
   };
@@ -442,7 +442,7 @@
     const w = Q.wfForDoc(d.id), rev = Q.canCreateRevision(d), wfOk = Q.canStartWorkflow(d);
     return Q.menu(`Actions for ${d.id} ${d.title}`, [
       { label: 'Open Document', icon: 'file-text', data: { action: 'open-doc', id: d.id } },
-      ...(w ? [{ label: 'Open Review', icon: 'file-check-2', data: { action: 'open-review', id: w.id } }] : []),
+      ...(w ? [{ label: 'Open Review', icon: 'file-check', data: { action: 'open-review', id: w.id } }] : []),
       '-',
       { label: 'Create Revision', icon: 'git-branch-plus', data: { action: 'create-revision', id: d.id }, disabled: !rev.ok, title: rev.why },
       { label: 'Submit for Technical Review', icon: 'send', data: { action: 'request-review', id: d.id }, disabled: !wfOk.ok, title: wfOk.why },
