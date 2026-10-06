@@ -1,0 +1,93 @@
+/* iQMS Mini V1 — Tasks and Team.
+ *
+ * The Dashboard has no styles here: it is built from the dashboard kit (kit/kit.css, classes `dk-`).
+ * These pages still use the prototype's `ui-` kit and the application tokens, which are mapped to the
+ * dashboard kit's tokens in mini-v1.css, so light and dark need no page-specific overrides. Sections:
+ *   1. Local parts (avatar, stage, due, empty state, filter bar)
+ *   2. Tasks (board + list)
+ *   3. Team
+ */
+
+/* ============================================================== 1. Local parts */
+.avatar.lg { width: 44px; height: 44px; font-size: 15px; }
+.avatar.more { background: var(--muted-bg); color: var(--text-2); font-size: 10px; }
+.ui-avatars { display: inline-flex; flex: none; }
+.ui-avatars .avatar + .avatar { margin-left: -6px; box-shadow: 0 0 0 2px var(--surface); }
+
+/* The colour for a data-stage comes from the dashboard kit: var(--dk-stage). */
+.ui-stage { display: inline-flex; align-items: center; gap: 7px; min-width: 0; font-size: 12.5px; line-height: 18px; font-weight: 500; color: var(--text-2); white-space: nowrap; }
+.ui-stage i { width: 8px; height: 8px; flex: none; border-radius: 2px; background: var(--dk-stage, var(--dk-stage-draft)); }
+/* Draft is hollow: a second cue besides colour that the revision has not entered the workflow. */
+.ui-stage[data-stage="draft"] i { background: none; box-shadow: inset 0 0 0 1.5px var(--dk-stage-draft); }
+
+.ui-due { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; line-height: 18px; color: var(--text-3); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.ui-due svg.lucide { width: 13px; height: 13px; flex: none; }
+.ui-due.soon { color: var(--warning); font-weight: 600; }
+.ui-due.overdue { color: var(--danger); font-weight: 600; }
+
+.ui-emptystate { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 36px 20px; text-align: center; font-size: 13px; line-height: 19px; color: var(--text-3); }
+.ui-emptystate svg.lucide { width: 22px; height: 22px; margin-bottom: 6px; color: var(--text-3); }
+.ui-emptystate b { font-size: 14px; font-weight: 600; color: var(--text); }
+.ui-emptystate .btn { margin-top: 10px; }
+
+/* FilterBar: tabs, a few selects, then page-level controls pushed right. */
+.ui-filterbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 14px; }
+.ui-filterbar .seg { overflow-x: auto; scrollbar-width: none; }
+.ui-filterbar .seg button { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; }
+.ui-filterbar .seg button svg.lucide { width: 15px; height: 15px; }
+.ui-filterbar .select, .ui-filterbar .combo-btn { width: auto; min-width: 150px; max-width: 230px; }
+.ui-filterbar-sp { flex: 1; }
+.ui-filterbar-note { font-size: 12px; color: var(--text-3); white-space: nowrap; }
+
+/* ============================================================== 2. Tasks */
+/* Board: five columns that keep a readable width; the region scrolls sideways instead of squeezing. */
+.ui-kanban-scroll { overflow-x: auto; padding-bottom: 10px; border-radius: var(--r-lg); }
+.ui-kanban-scroll:focus-visible { outline: none; box-shadow: var(--focus); border-radius: var(--r-lg); }
+.ui-kanban { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(220px, 1fr); gap: 12px; align-items: start; }
+.ui-kcol { min-height: 188px; padding: 12px 10px 10px; border: 1px solid var(--border); border-radius: var(--r-lg); background: color-mix(in srgb, var(--surface) 55%, var(--bg)); }
+.ui-kcol > header { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 4px; }
+.ui-kcol h2.ui-stage { font-size: 13.5px; line-height: 20px; font-weight: 600; color: var(--text); }
+.ui-kcol-hint { margin: 1px 4px 10px 19px; font-size: 12px; line-height: 17px; color: var(--text-3); }
+.ui-kcol-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.ui-kcol-empty { margin: 0; padding: 22px 8px; border: 1px dashed var(--border-strong); border-radius: var(--r-md); text-align: center; font-size: 12.5px; color: var(--text-3); }
+
+.ui-task { display: flex; flex-direction: column; gap: 3px; padding: 12px 12px 10px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); box-shadow: var(--shadow-card); color: inherit; text-decoration: none; transition: border-color .12s, box-shadow .12s; }
+.ui-task:hover { border-color: var(--border-strong); box-shadow: 0 6px 14px -8px rgba(16, 40, 30, .28); text-decoration: none; }
+.ui-task:focus-visible { outline: none; box-shadow: var(--focus); border-radius: 10px; }
+.ui-task-title { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; font-size: 13.5px; line-height: 19px; font-weight: 600; color: var(--text); }
+.ui-task-code { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px; line-height: 17px; color: var(--text-2); }
+.ui-task-proc { font-size: 12px; line-height: 17px; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Who has the next action on the left, due state on the right. On a narrow column the due state wraps under the name
+   instead of truncating either of them. */
+.ui-task-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 8px; margin-top: 9px; padding-top: 9px; border-top: 1px solid var(--border); }
+.ui-task-who { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-2); white-space: nowrap; }
+.ui-task.mine .ui-task-who > span:last-child { color: var(--accent); font-weight: 600; }
+.ui-task-cm { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+.ui-task-cm svg.lucide { width: 13px; height: 13px; }
+
+/* List: the operational table inherits the table skin; only the cells that are new are styled here. */
+.tasks-body .dt .user-cell + .sub { margin-left: 28px; }
+.tasks-body .dt .user-cell + .user-cell { margin-top: 4px; }
+.tasks-body .dt .user-cell { display: flex; }
+.tasks-body .dt .c-actions .btn { text-decoration: none; }
+.tasks-body > .ui-emptystate { border: 1px dashed var(--border-strong); border-radius: var(--r-lg); }
+
+/* ============================================================== 3. Team */
+.ui-members { display: grid; grid-template-columns: repeat(auto-fill, minmax(248px, 1fr)); gap: var(--gap); }
+.ui-member { display: flex; flex-direction: column; min-width: 0; padding: 18px 18px 16px; border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--surface); box-shadow: var(--shadow-card); }
+.ui-member > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+.ui-member h2 { font-size: 15px; line-height: 21px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ui-member h2 .muted { font-weight: 400; }
+/* Roles are neutral; green marks only the two roles that run document control. */
+.ui-member-role { margin: 1px 0 0; font-size: 13px; line-height: 18px; font-weight: 600; color: var(--text-2); }
+.ui-member-role.key { color: var(--accent); }
+.ui-member-meta { display: grid; margin: 6px 0 0; font-size: 12px; line-height: 17px; color: var(--text-3); }
+.ui-member-meta span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ui-member-also { display: flex; gap: 4px; height: 20px; margin: 10px 0 14px; overflow: hidden; }
+.ui-member-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: auto; padding: 12px 0; border-block: 1px solid var(--border); }
+.ui-member-stat b { display: block; font-size: 18px; line-height: 24px; font-weight: 600; color: var(--text); }
+.ui-member-stat span { display: block; font-size: 11.5px; line-height: 15px; color: var(--text-3); }
+.ui-member-stat.warn b { color: var(--warning); }
+.ui-member-stat.bad b { color: var(--danger); }
+.ui-member > footer { display: flex; gap: 8px; margin-top: 14px; }
+.ui-member > footer .btn { flex: 1; text-decoration: none; }

@@ -8,7 +8,7 @@ http.createServer((req, res) => {
   let pathname;
   try { pathname = decodeURIComponent(new URL(req.url, 'http://localhost').pathname); }
   catch { res.writeHead(400).end(); return; }
-  const file = path.resolve(root, '.' + (pathname === '/' ? '/index.html' : pathname));
+  const file = path.resolve(root, '.' + (pathname.endsWith('/') ? pathname + 'index.html' : pathname));   // "/" and "/kit/" serve their index.html
   if (!file.startsWith(root + path.sep) || pathname.split('/').some(part => part.startsWith('.') || ['node_modules', 'artifacts'].includes(part))) {
     res.writeHead(403).end(); return;
   }

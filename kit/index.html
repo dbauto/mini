@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard Kit · iQMS</title>
+  <meta name="description" content="Tokens and components of the iQMS Document Control dashboard, with live examples and the code to use them.">
+  <script>
+    // Apply the saved theme before first paint.
+    (() => {
+      let pref = 'system';
+      try { pref = localStorage.getItem('dk.theme') || 'system'; } catch (_) {}
+      document.documentElement.dataset.theme = pref === 'dark' || (pref === 'system' && matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+    })();
+  </script>
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="kit.css?v=1">
+  <style>
+    /* Reference-page furniture only (prefix ref-). The kit itself is everything prefixed dk-. */
+    .ref-intro { max-width: 760px; }
+    .ref-group { margin: 44px 0 18px; padding-bottom: 8px; border-bottom: 1px solid var(--dk-border); font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--dk-text-3); }
+    .ref-section { margin-bottom: 36px; scroll-margin-top: 76px; }
+    .ref-section[hidden] { display: none; }
+    .ref-section > h2 { font-size: 18px; line-height: 26px; font-weight: 600; }
+    .ref-lede { max-width: 720px; margin: 4px 0 14px !important; color: var(--dk-text-2); }
+    .ref-lede code, .ref-rules code, .ref-opts code { padding: 1px 5px; border-radius: 4px; background: var(--dk-neutral-bg); font: 12.5px/18px ui-monospace, "Cascadia Mono", Consolas, Menlo, monospace; color: var(--dk-text); }
+
+    .ref-demo { margin-bottom: 16px; border: 1px solid var(--dk-border); border-radius: var(--dk-r-lg); background: var(--dk-surface); overflow: hidden; }
+    .ref-demo-head { display: flex; align-items: baseline; gap: 10px; padding: 10px 16px; border-bottom: 1px solid var(--dk-border); }
+    .ref-demo-head h3 { font-size: 13.5px; line-height: 20px; font-weight: 600; }
+    .ref-demo-head span { font-size: 12.5px; color: var(--dk-text-3); }
+    .ref-preview { padding: 20px; background: var(--dk-bg); }
+    .ref-preview.row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; }
+    .ref-preview.w320 > * { max-width: 320px; }
+    .ref-preview.w460 > * { max-width: 460px; }
+    .ref-preview.w720 > * { max-width: 720px; }
+    .ref-preview.flush { padding: 0; }
+    .ref-code { position: relative; border-top: 1px solid var(--dk-border); background: var(--dk-surface-2); }
+    .ref-code pre { margin: 0; padding: 14px 16px; overflow-x: auto; font: 12.5px/19px ui-monospace, "Cascadia Mono", Consolas, Menlo, monospace; color: var(--dk-text-2); white-space: pre; tab-size: 2; }
+    .ref-code .dk-btn { position: absolute; top: 8px; right: 8px; }
+    .ref-opts { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 16px; margin: 0; padding: 14px 16px; border-top: 1px solid var(--dk-border); font-size: 13px; line-height: 20px; }
+    .ref-opts dt { margin: 0; }
+    .ref-opts dd { margin: 0; color: var(--dk-text-2); }
+
+    .ref-rules { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin: 0; padding: 0; list-style: none; }
+    .ref-rules li { padding: 14px 16px; border: 1px solid var(--dk-border); border-radius: var(--dk-r-lg); background: var(--dk-surface); }
+    .ref-rules b { display: block; margin-bottom: 2px; font-size: 14px; font-weight: 600; }
+    .ref-rules span { font-size: 13px; line-height: 19px; color: var(--dk-text-2); }
+
+    .ref-swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(196px, 1fr)); gap: 10px; padding: 16px; }
+    .ref-swatch { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .ref-swatch i { width: 36px; height: 36px; flex: none; border: 1px solid var(--dk-border-strong); border-radius: var(--dk-r-md); }
+    .ref-swatch code { display: block; font: 12px/17px ui-monospace, Consolas, Menlo, monospace; color: var(--dk-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ref-swatch small { display: block; font: 11.5px/16px ui-monospace, Consolas, Menlo, monospace; color: var(--dk-text-3); }
+    .ref-type { display: grid; gap: 12px; padding: 18px 16px; }
+    .ref-type > div { display: grid; grid-template-columns: 230px minmax(0, 1fr); align-items: baseline; gap: 16px; }
+    .ref-type small { font: 12px/17px ui-monospace, Consolas, Menlo, monospace; color: var(--dk-text-3); }
+    .ref-shapes { display: flex; flex-wrap: wrap; gap: 18px; padding: 20px 16px; background: var(--dk-bg); }
+    .ref-shape { width: 150px; height: 84px; display: grid; place-items: center; border: 1px solid var(--dk-border); background: var(--dk-surface); font: 12px/17px ui-monospace, Consolas, Menlo, monospace; color: var(--dk-text-2); text-align: center; }
+    .ref-icons { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 4px; padding: 12px; }
+    .ref-icons span { display: flex; align-items: center; gap: 9px; padding: 7px 8px; border-radius: var(--dk-r-md); font: 12px/17px ui-monospace, Consolas, Menlo, monospace; color: var(--dk-text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ref-icons .dk-icon { width: 18px; height: 18px; color: var(--dk-text); }
+    @media (max-width: 720px) { .ref-type > div { grid-template-columns: minmax(0, 1fr); gap: 2px; } .ref-preview { padding: 14px; } }
+  </style>
+</head>
+<body class="dk-app">
+  <div id="app"></div>
+  <noscript>The reference page needs JavaScript to draw the examples.</noscript>
+  <script src="icons.js?v=1"></script>
+  <script src="kit.js?v=1"></script>
+  <script src="reference.js?v=1"></script>
+</body>
+</html>

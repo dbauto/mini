@@ -1,6 +1,8 @@
 /* iQMS Mini V1 — document-management-first product shell.
  * Keeps the full prototype code underneath, but exposes only the approved V1 core:
- * controlled documents, technical review, approval, publication, ISO structure and settings.
+ * controlled documents, technical review, approval, publication, team, ISO structure and settings.
+ * This file owns the shell (appearance, navigation, terminology) and the New / Revise / Submit dialogs;
+ * the Dashboard, Tasks and Team pages are in mini-workspace.js.
  */
 (() => {
   'use strict';
@@ -27,14 +29,20 @@
     st.setProperty('--accent', `color-mix(in srgb, ${palette.accent} 62%, white 38%)`);
     st.setProperty('--accent-hover', `color-mix(in srgb, ${palette.accent} 52%, white 48%)`);
     st.setProperty('--accent-soft', `color-mix(in srgb, ${palette.accent} 22%, #151c19)`);
-    st.setProperty('--sb-bg', `color-mix(in srgb, ${palette.sb} 74%, #07110d)`);
-    st.setProperty('--sb-bg-2', `color-mix(in srgb, ${palette.sb2} 76%, #050c09)`);
+    st.setProperty('--sb-bg', `color-mix(in srgb, ${palette.sb} 56%, #08110D)`);
+    st.setProperty('--sb-bg-2', `color-mix(in srgb, ${palette.sb2} 58%, #060D0A)`);
     st.setProperty('--org-mark', `color-mix(in srgb, ${palette.mark} 72%, white 28%)`);
   };
 
   const baseApplyBranding = Q.applyBranding;
   Q.applyBranding = () => {
     baseApplyBranding?.();
+    // The untouched brand colours stay available for surfaces that remain light in the dark theme (the document preview).
+    const palette = Q.PALETTES?.[Q.S.settings?.branding?.palette] || Q.PALETTES?.forest;
+    if (palette) {
+      const st = document.documentElement.style;
+      st.setProperty('--brand-accent', palette.accent); st.setProperty('--brand-accent-hover', palette.hover); st.setProperty('--brand-accent-soft', palette.soft);
+    }
     applyDarkBrandTokens();
   };
 
@@ -84,40 +92,42 @@
   const nav = document.getElementById('sbNav');
   const foot = document.getElementById('sbFoot');
 
-  const v1Item = (href, key, iconName, label, extra = '') =>
+  /* ---------- Navigation ----------
+   * Dashboard · DOCUMENT CONTROL (Documents, Tasks) · ORGANIZATION (Team, ISO QMS Structure) · Settings.
+   * Later-phase modules (audits, risks, KPIs, CAPA, management review) stay in the code base but are not linked. */
+  const navItem = (href, key, iconName, label, extra = '') =>
     `<a class="sb-item" href="${href}" data-nav="${key}" title="${esc(label)}">${icon(iconName)}<span class="lbl">${esc(label)}</span>${extra}</a>`;
+  const navLabel = text => `<div class="sb-label" role="presentation">${esc(text)}</div>`;
 
   Q.renderSidebar = () => {
     const S = Q.S;
     document.getElementById('orgName').textContent = S.organization.name;
-    document.getElementById('orgMeta').textContent = 'Document Control · ISO QMS';
+    document.getElementById('orgMeta').textContent = 'Document Control';
     document.getElementById('orgMark').textContent = S.organization.initials;
     const me = Q.person(Q.me());
     document.getElementById('meName').textContent = me.name;
     document.getElementById('meTitle').textContent = me.title;
     document.getElementById('meAvatar').textContent = Q.initials(Q.me());
 
-    const mine = Q.myWorkflows().length;
+    const mine = Q.myTasks().length;
     nav.innerHTML =
-      `<div class="v1-nav-label">Core module · V1</div>` +
-      v1Item('#/overview', 'overview', 'layout-dashboard', 'Overview') +
-      v1Item('#/documents', 'documents', 'files', 'Document Control') +
-      v1Item('#/review', 'review', 'file-check', 'Documents in Review',
-        mine ? `<span class="count" title="${mine} awaiting your action">${mine}</span>` : '') +
-      v1Item('#/qms/processes', 'qms-processes', 'workflow', 'ISO QMS Structure');
-    foot.innerHTML = v1Item('#/settings', 'settings', 'settings', 'Settings');
+      navItem('#/overview', 'overview', 'layout-dashboard', 'Dashboard') +
+      navLabel('Document Control') +
+      navItem('#/documents', 'documents', 'files', 'Documents') +
+      navItem('#/tasks', 'tasks', 'list-checks', 'Tasks',
+        mine ? `<span class="count" title="${mine} assigned to you">${mine}<span class="sr-only"> assigned to you</span></span>` : '') +
+      navLabel('Organization') +
+      navItem('#/team', 'team', 'users', 'Team') +
+      navItem('#/qms/processes', 'qms-processes', 'workflow', 'ISO QMS Structure');
+    foot.innerHTML = navItem('#/settings', 'settings', 'settings', 'Settings');
     Q.refreshIcons();
     Q.syncSidebar();
   };
 
   Q.syncSidebar = (name, parts) => {
     const r = Q.route();
-    const n = name || r.name;
-    const p = parts || r.parts || [];
-    let key = n;
-    if (n === 'process') key = 'qms-processes';
-    if (n === 'qms') key = p[1] === 'processes' ? 'qms-processes' : 'qms-processes';
-    if (n === 'setup') key = 'settings';
+    const n = name || r.parts[0] || 'overview';
+    const key = { process: 'qms-processes', qms: 'qms-processes', setup: 'settings', review: 'tasks', profile: '' }[n] ?? n;
     document.querySelectorAll('#sbNav [data-nav], #sbFoot [data-nav]').forEach(a => {
       const on = a.dataset.nav === key;
       a.classList.toggle('active', on);
@@ -125,15 +135,23 @@
     });
   };
 
+  /* The labelled sidebar is the default on desktop (people can still unpin it to the icon rail). */
+  if (Q.UI.pinned === undefined) Q.UI.pinned = true;
+
+  /* The Document Controller runs Technical Review and publishes. Read from the people data, not hard-coded. */
+  Q.docController = () => Object.keys(Q.S.people).find(id => /document control/i.test(Q.S.people[id].title) && Q.S.users.some(u => u.id === id && u.status === 'Active'))
+    || Q.S.users.find(u => u.role === 'QMS Manager' && u.status === 'Active')?.id || Q.me();
+
   /* V1 terminology: technical review is the document controller's gate. */
   Q.wfStatus = w => w.changesRequested ? 'Changes Requested'
     : w.stage === 'review' ? 'Technical Review'
-    : w.stage === 'approval' ? 'Approval in Progress'
+    : w.stage === 'approval' ? 'Approval'
     : 'Ready to Publish';
   Q.wfStageLabel = w => w.changesRequested ? 'Technical Review — changes requested'
     : ({ review: 'Technical Review', approval: 'Approval', publication: 'Ready to Publish' }[w.stage]);
   Q.docStatus = d => {
     const label = d.status === 'In Review' ? 'Technical Review'
+      : d.status === 'Approval in Progress' ? 'Approval'
       : d.status === 'Approved' ? 'Ready to Publish'
       : d.status;
     const kind = {
@@ -141,19 +159,14 @@
       'Draft': 'neutral',
       'Technical Review': 'info',
       'Changes Requested': 'orange',
-      'Approval in Progress': 'warning',
+      'Approval': 'warning',
       'Ready to Publish': 'success outline'
     }[label];
     return Q.st(label, kind);
   };
 
-  Q.docTabs = cur => {
-    const mine = Q.myWorkflows().length;
-    return `<div class="tabs page-tabs" role="tablist" aria-label="Document control">
-      <a role="tab" href="${Q.UI.docsView && Q.UI.docsView.startsWith('#/documents') ? Q.UI.docsView : '#/documents'}" aria-selected="${cur === 'library'}">${icon('library')}Document Library<span class="muted small tnum">${Q.S.documents.length}</span></a>
-      <a role="tab" href="#/review" aria-selected="${cur === 'routing'}">${icon('file-check')}Documents in Review<span class="muted small tnum">${Q.S.workflows.length}</span>${mine ? `<span class="tab-note">${mine} for you</span>` : ''}</a>
-    </div>`;
-  };
+  /* Documents and Tasks are separate destinations in the sidebar, so the library no longer needs page tabs. */
+  Q.docTabs = () => '';
 
   /* Keep documents in Microsoft 365 for this V1 demo. Existing sample uploads are
    * presented as linked records at runtime; no sample binary is migrated or stored. */
@@ -171,145 +184,13 @@
     }
   });
 
-  const currentUserWork = () => Q.S.workflows.filter(w => Q.wfAssignees(w).includes(Q.me()));
-  const docActivity = () => Q.S.activity.filter(a => a.ref && Q.doc(a.ref)).slice(0, 7);
-  const workflowStep = w => w.changesRequested ? 'Changes Requested'
-    : w.stage === 'review' ? 'Technical Review'
-    : w.stage === 'approval' ? 'Approval'
-    : 'Ready to Publish';
-
-  Q.views.overview = () => {
-    const docs = Q.S.documents;
-    const workflows = Q.S.workflows;
-    const published = docs.filter(d => d.status === 'Published').length;
-    const technical = workflows.filter(w => w.stage === 'review' && !w.changesRequested).length;
-    const changes = workflows.filter(w => w.changesRequested).length;
-    const approval = workflows.filter(w => w.stage === 'approval').length;
-    const publish = workflows.filter(w => w.stage === 'publication').length;
-    const overdue = docs.filter(Q.docOverdue).length;
-    const mine = currentUserWork();
-
-    const stats = [
-      ['Published documents', published, 'circle-check', 'Controlled and active'],
-      ['Technical review', technical, 'search-check', 'With Document Control'],
-      ['Changes requested', changes, 'message-square', 'Waiting for revision'],
-      ['Approval', approval, 'stamp', 'Awaiting authorization'],
-      ['Ready to publish', publish, 'send', 'Approved revisions'],
-      ['Review overdue', overdue, 'calendar-clock', 'Periodic review required']
-    ];
-
-    const workRows = mine.length ? mine.map(w => {
-      const d = Q.doc(w.doc);
-      return `<button class="v1-work-row" type="button" data-go-review="${esc(w.id)}">
-        <span class="v1-work-icon">${icon(w.stage === 'review' ? 'search-check' : w.stage === 'approval' ? 'stamp' : 'send')}</span>
-        <span class="v1-work-main"><b>${esc(d?.title || w.doc)}</b><span>${esc(d?.id || w.doc)} · Rev ${esc(w.rev)} · ${esc(workflowStep(w))}</span></span>
-        <span class="v1-work-due">Due ${Q.fmt(w.due)}</span>${icon('chevron-right')}
-      </button>`;
-    }).join('') : '<div class="v1-empty">No document actions are currently assigned to you.</div>';
-
-    const recent = docActivity().length ? docActivity().map(a => `<div class="v1-activity-row">
-      <span class="avatar sm">${esc(Q.initials(a.who))}</span>
-      <span><b>${esc(Q.pname(a.who))}</b> ${esc(a.text)}<small>${Q.fmt(a.date)}</small></span>
-    </div>`).join('') : '<div class="v1-empty">No recent document activity.</div>';
-
-    const html = Q.pageHead({
-      title: 'Document Control Overview',
-      sub: 'V1 focuses on controlled documents first. Client-specific QMS modules are added only after their functions and UI are approved.',
-      actions: `<button class="btn primary" type="button" data-action="connect-doc">${icon('file-plus')}New / Revise Document</button>`
-    }) + `
-      <div class="v1-phase-banner">
-        <div><span class="v1-kicker">APPROVED CORE SCOPE</span><h2>Document Management + ISO QMS foundation</h2>
-        <p>Create or revise controlled documents, link them to Microsoft 365, route them through technical review and approval, then publish with a complete revision trail.</p></div>
-        <div class="v1-scope-chips"><span>Document library</span><span>Revision control</span><span>Technical review</span><span>Approval</span><span>Publication</span><span>Audit trail</span></div>
-      </div>
-      <div class="v1-stats">${stats.map(([label, value, ic, hint]) => `<div class="v1-stat"><span class="v1-stat-icon">${icon(ic)}</span><div><b class="tnum">${value}</b><span>${esc(label)}</span><small>${esc(hint)}</small></div></div>`).join('')}</div>
-      <div class="v1-grid">
-        <section class="panel v1-panel"><div class="panel-head"><div><h2>Needs your action</h2><p>Current document-control work queue</p></div><a class="btn sm" href="#/review">Open queue</a></div><div class="v1-list">${workRows}</div></section>
-        <section class="panel v1-panel"><div class="panel-head"><div><h2>Document lifecycle</h2><p>One controlled route per revision</p></div></div>
-          <div class="v1-flow">
-            <div><span>1</span><b>Draft</b><small>Create new or revise existing</small></div>
-            ${icon('chevron-right')}
-            <div><span>2</span><b>Technical Review</b><small>Document Controller checks content</small></div>
-            ${icon('chevron-right')}
-            <div><span>3</span><b>Approval</b><small>Authorized approver signs off</small></div>
-            ${icon('chevron-right')}
-            <div><span>4</span><b>Publish</b><small>Revision becomes controlled</small></div>
-          </div>
-          <div class="v1-rule">${icon('lock')}The current published revision remains effective until the approved revision is published.</div>
-        </section>
-        <section class="panel v1-panel"><div class="panel-head"><div><h2>Recent document activity</h2><p>Traceable changes in the core module</p></div></div><div class="v1-activity">${recent}</div></section>
-        <section class="panel v1-panel"><div class="panel-head"><div><h2>ISO QMS structure</h2><p>Documents remain connected to the processes and clauses they support.</p></div><a class="btn sm" href="#/qms/processes">View structure</a></div>
-          <div class="v1-iso-summary"><div><b>${Q.topProcesses().length}</b><span>Top-level processes</span></div><div><b>${docs.filter(d => Q.docIso(d).length).length}</b><span>Documents mapped to ISO clauses</span></div><div><b>${docs.length}</b><span>Controlled document records</span></div></div>
-        </section>
-      </div>`;
-
-    return {
-      title: 'Document Control Overview',
-      nav: 'overview',
-      html,
-      after: main => main.querySelectorAll('[data-go-review]').forEach(b => b.addEventListener('click', () => Q.go('#/review/' + b.dataset.goReview)))
-    };
-  };
-
-  /* V1 work queue with explicit business states instead of a generic "Routing" list. */
-  const v1ReviewTable = (seg = 'mine') => {
-    const rows = () => Q.S.workflows.map(w => ({ ...w, d: Q.doc(w.doc) })).filter(r => r.d);
-    const all = rows();
-    const segs = {
-      mine: r => Q.wfAssignees(r).includes(Q.me()),
-      tech: r => r.stage === 'review' && !r.changesRequested,
-      changes: r => !!r.changesRequested,
-      approval: r => r.stage === 'approval',
-      publish: r => r.stage === 'publication',
-      all: () => true
-    };
-    const tools = Q.seg('Work queue', [
-      ['mine', 'My action', all.filter(segs.mine).length],
-      ['tech', 'Technical review', all.filter(segs.tech).length],
-      ['changes', 'Changes requested', all.filter(segs.changes).length],
-      ['approval', 'Approval', all.filter(segs.approval).length],
-      ['publish', 'Ready to publish', all.filter(segs.publish).length],
-      ['all', 'All', all.length]
-    ], seg) + `<select class="select" data-filter="process" aria-label="Process">${Q.processOptions()}</select>`;
-
-    return Q.table({
-      id: 'v1-wf',
-      rows,
-      key: r => r.id,
-      selectable: true,
-      tight: true,
-      noun: 'document workflows',
-      caption: 'Documents in Review',
-      rowLabel: r => r.d.title,
-      tools,
-      segDefault: seg,
-      segs,
-      filters: { process: (r, v) => Q.inProc(r.d.process, v) },
-      columns: [
-        { key: 'doc', label: 'Document', min: '220px', sort: r => r.d.title, render: r => `<span class="title">${esc(r.d.title)}</span><span class="sub tnum">${esc(r.d.id)} · Rev ${esc(r.rev)}</span>` },
-        { key: 'process', label: 'Process', sort: r => Q.proc(r.d.process)?.process_code, render: r => Q.pcell(r.d.process) },
-        { key: 'stage', label: 'Current step', sort: r => workflowStep(r), render: r => Q.st(workflowStep(r), r.changesRequested ? 'orange' : r.stage === 'review' ? 'info' : r.stage === 'approval' ? 'warning' : 'success outline') },
-        { key: 'who', label: 'Waiting on', render: r => Q.wfAssignees(r).map(x => `<span class="nowrap">${Q.who(x)}</span>`).join('<br>') || '—' },
-        { key: 'due', label: 'Due', cls: 'c-date', sort: r => r.due, render: r => Q.dueDate(r.due) },
-        { key: 'act', label: '', cls: 'c-actions', render: r => `<button class="btn sm ${Q.wfAssignees(r).includes(Q.me()) ? 'primary' : ''}" type="button" data-action="open-review" data-id="${esc(r.id)}">Open Review</button>` }
-      ],
-      empty: '<h3>No documents in this queue</h3><p>Items appear here after a draft is submitted for technical review.</p>',
-      selectionBar: keys => keys.length === 1 ? `<button class="btn sm primary" type="button" data-action="open-review" data-id="${keys[0]}">Open Review</button><button class="btn sm" type="button" data-action="open-doc" data-id="${esc(Q.wf(keys[0]).doc)}">Open Document</button>` : ''
-    });
-  };
-
+  /* Dashboard, Tasks and Team are defined in mini-workspace.js.
+   * #/review (the old work-queue list) now lives at #/tasks; #/review/<id> is still the review page. */
   Q.views.review = (parts, q) => {
     if (parts[0]) return Q.reviewPage(parts[0]);
-    return {
-      title: 'Documents in Review',
-      nav: 'review',
-      html: Q.pageHead({
-        crumbs: [['Document Control', '#/documents'], ['Documents in Review']],
-        title: 'Documents in Review',
-        sub: 'Operational work queue for Technical Review → Approval → Publish.',
-        actions: `<button class="btn primary" type="button" data-action="connect-doc">${icon('file-plus')}New / Revise Document</button>`
-      }) + Q.docTabs('routing') + `<div class="v1-queue-note">${icon('info')}A second workflow cannot start while a revision is already in review or approval.</div>` + v1ReviewTable(q.show || (currentUserWork().length ? 'mine' : 'all'))
-    };
+    const show = { mine: 'mine', all: '' }[q.show] ?? '';
+    location.replace('#/tasks?view=list' + (show ? `&show=${show}` : ''));
+    return { title: 'Tasks', nav: 'tasks', html: '' };
   };
 
   /* New / Revise entry point. */
@@ -472,7 +353,7 @@
   Q.actions['request-review'] = d => {
     const doc = Q.doc(d.id), chk = Q.canStartWorkflow(doc);
     if (!chk.ok) { Q.toast('Technical Review not started', chk.why); return; }
-    const controller = 'nina';
+    const controller = Q.docController();
     const processOwner = Q.proc(Q.rootId(doc.process))?.owner;
     const defaultApprover = processOwner && processOwner !== controller ? processOwner : 'maria';
     const m = Q.openModal({
@@ -501,7 +382,7 @@
       Q.S.workflows.push(w);
       doc.status = 'In Review';
       Q.S.activity.unshift({ date: Q.today(), who: Q.me(), process: doc.process, text: `submitted ${doc.title} Rev ${doc.workingRev} for technical review`, ref: doc.id });
-      Q.save(); Q.closeModal(); Q.renderSidebar(); Q.go('#/review');
+      Q.save(); Q.closeModal(); Q.renderSidebar(); Q.go('#/tasks');
       Q.toast('Submitted for Technical Review', `Assigned to ${Q.pname(controller)}. Approval will follow after technical review.`);
     });
   };
@@ -563,8 +444,27 @@
     };
   }
 
-  /* Small product text cleanup. */
+  /* Settings → UI Components documents the prototype's `ui-` kit. Point to the dashboard kit from there. */
+  if (Q.settingsViews?.['ui-library']) {
+    const baseLibrary = Q.settingsViews['ui-library'];
+    Q.settingsViews['ui-library'] = q => {
+      const view = baseLibrary(q);
+      view.html = `<div class="callout" style="margin-bottom:16px">${icon('blocks')}<span><b>Dashboard Kit</b>The Dashboard is built from its own kit of tokens and components. <a href="kit/" target="_blank" rel="noopener">Open the kit reference</a> to see each one with the code to use it.</span></div>` + view.html;
+      return view;
+    };
+  }
+
+  /* ---------- Top bar scope ----------
+   * Global search and notifications only cover what V1 exposes: documents, processes and people. */
+  Q.searchScope = list => list.filter(r => ['Processes', 'Documents'].includes(r.g)).concat(
+    Q.S.users.filter(u => u.status !== 'Deactivated' && Q.S.people[u.id]).map(u => {
+      const p = Q.S.people[u.id];
+      return { g: 'Team', icon: 'user-round', t: p.name, m: `${p.title} · ${p.dept}`, go: () => Q.go(`#/tasks?who=${u.id}`), s: `${p.name} ${p.title} ${p.dept} ${p.email || ''}` };
+    }));
+  Q.searchCovers = 'Search covers controlled documents, processes and people.';
+  Q.notifScope = n => /^(wf-|od-)/.test(n.id);
+
   const search = document.getElementById('searchInput');
-  if (search) search.placeholder = 'Search controlled documents, processes, owners…';
+  if (search) search.placeholder = 'Search documents, processes, people…';
   document.title = 'Document Control · iQMS';
 })();
