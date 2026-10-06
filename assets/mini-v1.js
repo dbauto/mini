@@ -377,7 +377,8 @@
       doc.workingRev = next;
       doc.status = 'Draft';
       doc.updated = Q.today();
-      doc.pendingSource = { ...src };\n      doc.source = { ...src };
+      doc.pendingSource = { ...src };
+      doc.source = { ...src };
       Q.S.revisions[doc.id].push({
         rev: next, summary: v.summary.trim(), reason: v.reason, author: v.author, preparedBy: v.author,
         date: Q.today(), reviewers: [], approval: '', published: null, state: 'Draft', source: { ...src }
