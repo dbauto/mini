@@ -12,12 +12,45 @@ This repository is the **document-management-first** client version. It was spli
 - Changes requested / resubmission loop
 - Approval
 - Final **Publish**
-- Documents in Review work queue
+- **Dashboard**: document-control KPIs, workflow distribution, Needs Attention, My Work, Document Control Health, Recent Activity
+- **Tasks**: the work queue as a Board or a List (the former "Documents in Review" table), with filters by person, process, stage and due date
+- **Team**: the people who prepare, review, approve and control documents, with their workload and access
 - Comments and activity / audit trail
 - Process / area assignment and ISO clause context
 - User/access and workspace settings
+- Light and dark appearance
 
-The visible V1 sidebar is intentionally limited to **Overview, Document Control, Documents in Review, ISO QMS Structure, and Settings**. Risk, audit, survey, KPI and other broader modules remain in the underlying prototype only as future/customization work and are not part of the V1 navigation.
+The visible V1 sidebar is intentionally limited to **Dashboard · Document Control (Documents, Tasks) · Organization (Team, ISO QMS Structure) · Settings**. Risk, audit, survey, KPI and other broader modules remain in the underlying prototype only as future/customization work and are not part of the V1 navigation, global search or notifications.
+
+### V1 routes
+
+| Route | Page |
+|---|---|
+| `#/overview` | Dashboard |
+| `#/documents` | Documents (library and saved views) |
+| `#/tasks` | Tasks. `?view=board\|list`, `?show=mine\|soon\|overdue`, `?who=<person>`, `?process=<id>`, `?stage=draft\|review\|changes\|approval\|publish\|in-review` |
+| `#/review/<workflow>` | Review page for one revision (opened from a task) |
+| `#/team` | Team. `?role=coordinator\|controller\|reviewer\|approver\|owner`, `?dept=<department>` |
+| `#/qms/processes` | ISO QMS Structure |
+| `#/settings` | Settings |
+
+`#/review` (the old queue URL) redirects to `#/tasks?view=list`.
+
+### How the V1 pages are built
+
+- `assets/mini-v1.js` / `assets/mini-v1.css`: the product shell. Navigation, terminology, appearance, the New / Revise / Submit dialogs, and the token layer (radius, surfaces, shadows, lifecycle colours, dark theme).
+- `assets/mini-workspace.js` / `assets/mini-workspace.css`: Dashboard, Tasks and Team. They extend the existing `Q.ui` kit and read one derived model, `Q.tasks()`, built from `Q.S.workflows` and unsubmitted drafts in `Q.S.documents`. Dashboard counts, the board, the list, team workload and the sidebar badge all come from it.
+- The board is deliberately **not** drag-and-drop. A revision changes stage only through the review page actions (Complete Technical Review, Request Changes, Resubmit, Approve, Publish), each of which checks who is acting and writes to the audit trail.
+- **Document Control Health** is the average of four counted checks (periodic reviews on time, tasks within due date, source links available, document details complete). It is an internal indicator, not an ISO certification or compliance score.
+
+### Checks
+
+```bash
+node scripts/serve.cjs &          # http://localhost:4173
+bash scripts/smoke.sh             # renders the V1 routes in headless Chrome, light and dark
+```
+
+The same checks run in GitHub Actions (`.github/workflows/v1-check.yml`). Screenshots of the V1 pages are in `screenshots/v1/`.
 
 ### Controlled lifecycle
 

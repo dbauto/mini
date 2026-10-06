@@ -72,7 +72,8 @@
     }
     S.risks.filter(r => Q.riskOpen(r) && r.kind === 'Risk' && Q.riskLevel(r) === 'High' && Q.proc(Q.rootId(r.process))?.owner === my).forEach(r => out.push({ id: 'rk-' + r.id, ic: 'shield-alert', t: `High risk in your process: ${r.title}`, m: Q.plabel(r.process), href: `#/risks?focus=${r.id}` }));
     (S.settings?.privacy?.breaches || []).filter(b => b.status === 'Open').forEach(b => out.push({ id: 'pb-' + b.id, ic: 'shield-alert', t: `Personal data breach ${b.id}: ${b.summary}`, m: 'Notify within 72 hours if required', href: '#/settings/privacy', urgent: true }));
-    return out;
+    // Q.notifScope lets a product edition keep notifications to the modules it exposes.
+    return Q.notifScope ? out.filter(Q.notifScope) : out;
   };
   const unread = () => { const read = new Set(Q.UI.readNotifs || []); return notifications().filter(n => !read.has(n.id)); };
   Q.syncNotifDot = () => {

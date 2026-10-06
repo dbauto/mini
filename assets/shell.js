@@ -212,12 +212,13 @@
   const renderSearch = () => {
     const q = input.value.trim().toLowerCase();
     if (!q) { close(); return; }
-    results = index().filter(r => r.s.toLowerCase().includes(q) || r.t.toLowerCase().includes(q));
+    // Q.searchScope lets a product edition limit or extend what global search covers.
+    results = (Q.searchScope ? Q.searchScope(index()) : index()).filter(r => r.s.toLowerCase().includes(q) || r.t.toLowerCase().includes(q));
     const groups = {};
     results.forEach(r => { (groups[r.g] = groups[r.g] || []).push(r); });
     let i = 0;
     box.innerHTML = results.length ? Object.entries(groups).map(([g, list]) => `<h4>${esc(g)} <span class="muted">${list.length}</span></h4>` + list.slice(0, 5).map(r => `<button type="button" role="option" data-i="${results.indexOf(r)}" id="sr-${i++}">${icon(r.icon)}<span><span class="r-title">${esc(r.t)}</span><br><span class="r-meta">${esc(r.m)}</span></span></button>`).join('')).join('')
-      : `<p class="none">No results for “${esc(input.value)}”. Search covers processes, documents, risks, KPIs, evidence, findings and corrective actions.</p>`;
+      : `<p class="none">No results for “${esc(input.value)}”. ${esc(Q.searchCovers || 'Search covers processes, documents, risks, KPIs, evidence, findings and corrective actions.')}</p>`;
     box.hidden = false; input.setAttribute('aria-expanded', 'true'); Q.refreshIcons();
   };
   input.addEventListener('input', renderSearch);

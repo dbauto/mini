@@ -81,7 +81,7 @@
       <div><h4>${Q.docRestricted(d) ? "Owner's description" : 'About'}</h4><p>${esc(d.description)}</p>
         <p style="margin-top:8px">${Q.classChip(d)}${Q.docRestricted(d) ? ' <span class="muted">iQMS has this description only — it does not read the file.</span>' : ''}</p>
         ${wr ? `<p style="margin-top:6px"><b style="color:var(--text)">Rev ${esc(d.rev || '—')} → ${esc(wr.rev)}:</b> ${esc(wr.summary || 'No change summary yet.')}</p>` : `<p style="margin-top:6px" class="muted">Active revision ${esc(d.rev ? 'Rev ' + d.rev : '—')}${d.effective ? ', effective ' + Q.fmt(d.effective) : ''}.</p>`}</div>
-      <div><h4>Routing</h4>${w ? `<ul><li>${Q.st(Q.wfStatus(w))} · Rev ${esc(w.rev)}</li><li>Waiting on <b style="color:var(--text)">${esc(Q.wfAssignees(w).map(Q.pname).join(', ') || '—')}</b></li><li>Due ${Q.dueDate(w.due)}</li></ul>` : `<p class="muted">Not in routing.</p>`}
+      <div><h4>Workflow</h4>${w ? `<ul><li>${Q.st(Q.wfStatus(w))} · Rev ${esc(w.rev)}</li><li>Waiting on <b style="color:var(--text)">${esc(Q.wfAssignees(w).map(Q.pname).join(', ') || '—')}</b></li><li>Due ${Q.dueDate(w.due)}</li></ul>` : `<p class="muted">Not in routing.</p>`}
         <h4 style="margin-top:10px">File</h4><p>${d.source.state !== 'connected' ? '<span class="src-bad">Access unavailable</span>' : uploaded(d) ? `Stored in iQMS · ${esc(d.source.size || '')}` : `${esc(d.source.system)} link · ${esc(d.source.folder)}`}</p></div>
       <div><h4>Linked</h4><ul>
         <li>ISO 9001 ${iso.length ? iso.map(c => `<a href="#/documents?view=clause&c=${esc(c)}" class="clause">${esc(c)}</a>`).join(', ') : '<span class="muted">not mapped</span>'}</li>
@@ -137,7 +137,7 @@
       <a role="tab" href="${Q.UI.docsView && Q.UI.docsView.startsWith('#/documents') ? Q.UI.docsView : '#/documents'}" aria-selected="${cur === 'library'}">${icon('library')}Library<span class="muted small tnum">${Q.S.documents.length}</span></a>
       <a role="tab" href="#/review" aria-selected="${cur === 'routing'}">${icon('route')}Routing<span class="muted small tnum">${all}</span>${mine ? `<span class="tab-note" style="color:var(--accent)">${mine} for you</span>` : ''}</a></div>`;
   };
-  const docHead = (crumbs = null) => Q.pageHead({ crumbs, title: 'Documented Information', sub: 'Controlled documents (ISO 9001 clause 7.5). The QMS manages metadata, revision workflow and audit history while the actual document remains in the client’s approved Microsoft 365 repository.',
+  const docHead = (crumbs = null) => Q.pageHead({ crumbs, title: 'Documents', sub: 'Controlled documents (documented information, ISO 9001 clause 7.5). The QMS manages metadata, revision workflow and audit history while the actual document remains in the client’s approved Microsoft 365 repository.',
     actions: `<button class="btn primary" type="button" data-action="connect-doc">${icon('file-plus')}New / Revise Document</button>` });
   /* ---------- Saved views on the Library ----------
    * One card holds the view tabs, the toolbar and the table (see Q.viewPage in
@@ -157,7 +157,7 @@
   Q.docGroupFlag = { test: d => Q.docOverdue(d), title: 'overdue for review' };
   Q.views.documents = (_, q) => {
     const r = Q.vwResolve(T, q);
-    if (r.redirect) { location.replace(r.redirect); return { title: 'Documented Information', nav: 'documents', html: '' }; }
+    if (r.redirect) { location.replace(r.redirect); return { title: 'Documents', nav: 'documents', html: '' }; }
     const v = r.v, where = Q.matcher(T, v.filters);
     Q.vwRemember(T); Q.UI.docsView = location.hash; Q.saveUI();
     let body, leaf = null, side = '';
@@ -165,8 +165,8 @@
     else if (v.group === 'clause') { const c = q.c || (Q.CLAUSES.find(([k]) => Q.docsForClause(k).some(where)) || ['4'])[0]; leaf = c === 'none' ? 'Not mapped to a clause' : `${c} ${c.includes('.') ? Q.S.iso.find(x => x.clause === c)?.title || '' : Q.clauseTitle(c)}`; ({ html: body, side } = docsByClause(v, v, where, c)); }
     else if (Q.vwFieldGroup(v.group)) { const g = Q.vwGrouped(T, v, where, q, Q.docTable, { flag: Q.docGroupFlag }); leaf = g.leaf; body = g.html; side = g.side; }
     else body = Q.docTable(Q.vwTableId(T, v), { columns: v.columns, where, pageSize: 10, initialSort: v.sort, bare: true, extraTools: Q.vwSummary(T, v) });
-    const crumbs = [['Documented Information', '#/documents?view=list'], ...(leaf ? [[v.name, hashFor(v)], [leaf]] : [[v.name]])];
-    return { title: `${leaf || v.name} · Documented Information`, nav: 'documents', html: docHead(crumbs) + Q.docTabs('library') + Q.vwCard(T, v, body, side), after: main => Q.vwAfter(T, main) };
+    const crumbs = [['Documents', '#/documents?view=list'], ...(leaf ? [[v.name, hashFor(v)], [leaf]] : [[v.name]])];
+    return { title: `${leaf || v.name} · Documents`, nav: 'documents', html: docHead(crumbs) + Q.docTabs('library') + Q.vwCard(T, v, body, side), after: main => Q.vwAfter(T, main) };
   };
 
   function docsByProcess(v, dr, where, pid) {
@@ -241,14 +241,16 @@
   // Events for a revision that is being routed now (live from the workflow), oldest first; open steps follow as "waiting".
   Q.wfTrail = (w, r) => {
     const ev = [], used = new Set();
-    const note = (who, date) => { const c = w.comments.find((x, i) => !used.has(i) && x.who === who && x.date === date); if (c) used.add(w.comments.indexOf(c)); return c?.text || ''; };
-    ev.push({ at: w.started, who: w.startedBy, verb: 'started routing for', obj: `Rev ${w.rev}`, desc: r?.summary || '', icon: 'route', stage: 'Review',
+    const note = (who, date) => { const c = w.comments.find((x, i) => !used.has(i) && !x.logged && x.who === who && x.date === date); if (c) used.add(w.comments.indexOf(c)); return c?.text || ''; };
+    ev.push({ at: w.started, who: w.startedBy, verb: 'started the workflow for', obj: `Rev ${w.rev}`, desc: r?.summary || '', icon: 'route', stage: 'Review',
       chips: [avatars(w.reviewers.map(x => x.who)), chip('', 'Reviewers', String(w.reviewers.length)), chip('calendar', 'Due', Q.fmt(w.due))] });
     w.reviewers.filter(x => x.date).forEach(x => { const changes = x.state === 'Changes requested';
       ev.push({ at: x.date, who: x.who, verb: changes ? 'requested changes to' : 'completed review of', obj: `Rev ${w.rev}`, quote: note(x.who, x.date), stage: changes ? 'Changes' : 'Review', icon: changes ? 'message-square' : 'file-check' }); });
     w.approvers.filter(x => x.date).forEach(x => { const changes = x.state === 'Changes requested';
       ev.push({ at: x.date, who: x.who, verb: changes ? 'requested changes to' : 'approved', obj: `Rev ${w.rev}`, quote: note(x.who, x.date), stage: changes ? 'Changes' : 'Approval', icon: changes ? 'message-square' : 'stamp' }); });
-    w.comments.forEach((c, i) => { if (!used.has(i)) ev.push({ at: c.date, who: c.who, verb: 'commented on', obj: `Rev ${w.rev}`, quote: c.text, stage: null, icon: 'message-square' }); });
+    // Earlier review rounds (kept when a revision is resubmitted after changes were requested).
+    (w.history || []).forEach(e => ev.push({ ...e }));
+    w.comments.forEach((c, i) => { if (!used.has(i) && !c.logged) ev.push({ at: c.date, who: c.who, verb: 'commented on', obj: `Rev ${w.rev}`, quote: c.text, stage: null, icon: 'message-square' }); });
     ev.sort((a, b) => a.at < b.at ? -1 : a.at > b.at ? 1 : 0);
     // What is still open, in routing order.
     const waiting = [];
@@ -602,7 +604,7 @@
   /* =================== Document Review page (50:50 draggable split) =================== */
   Q.reviewPage = wfId => {
     const w = Q.wf(wfId);
-    if (!w) return { title: 'Review not found', nav: 'review', html: Q.pageHead({ title: 'This review is no longer active', crumbs: [['Documented Information', '#/documents'], ['Routing', '#/review'], ['Not found']], sub: 'It may have been published or withdrawn. Published revisions are in the document’s revision history.' }) + `<a class="btn" href="#/review">Back to Routing</a>` };
+    if (!w) return { title: 'Review not found', nav: 'review', html: Q.pageHead({ title: 'This review is no longer active', crumbs: [['Documents', '#/documents'], ['Tasks', '#/tasks'], ['Not found']], sub: 'It may have been published or withdrawn. Published revisions are in the document’s revision history.' }) + `<a class="btn" href="#/tasks">Back to Tasks</a>` };
     const d = Q.doc(w.doc), me = Q.me();
     const rev = (Q.S.revisions[d.id] || []).find(r => r.rev === w.rev) || { summary: '' };
     const steps = [['review', 'Technical Review', 'Document Controller checks content'], ['approval', 'Approval', 'Authorize revision'], ['publication', 'Publish', 'Make it the active version']];
@@ -615,13 +617,14 @@
     if (myReview) bar = `<span class="note">You are the technical reviewer. Check the controlled-document content and metadata, then complete Technical Review.</span><button class="btn" type="button" data-rv="changes">Request Changes</button><button class="btn primary" type="button" data-rv="complete">Complete Technical Review</button>`;
     else if (myApproval) bar = `<span class="note">Reviews are complete. Approving authorizes Rev ${esc(w.rev)}; publication follows.</span><button class="btn" type="button" data-rv="changes">Request Changes</button><button class="btn primary" type="button" data-rv="approve">Approve</button>`;
     else if (myPublish) bar = `<span class="note">Approved by ${esc(w.approvers.map(a => Q.pname(a.who)).join(', '))}. Publishing makes Rev ${esc(w.rev)} the active controlled version.</span><button class="btn primary" type="button" data-rv="publish">${icon('send')}Publish</button>`;
+    else if (w.changesRequested && w.startedBy === me) bar = `<span class="note">${icon('info')} Changes were requested. Update the document, then resubmit it. It returns to Technical Review.</span><button class="btn primary" type="button" data-rv="resubmit">${icon('send')}Resubmit for Technical Review</button>`;
     else if (w.changesRequested) bar = `<span class="note">${icon('info')} Changes requested — waiting for ${esc(Q.pname(w.startedBy))} to submit an updated draft.</span><button class="btn" type="button" data-action="toast" data-title="Reminder sent" data-msg="Reminder sent to ${esc(Q.pname(w.startedBy))}.">Send Reminder</button>`;
     else bar = `<span class="note">Waiting for ${esc(waiting || '—')}. You have no action on this revision.</span><button class="btn" type="button" data-action="toast" data-title="Reminder sent" data-msg="Reminder sent to ${esc(waiting)}.">Send Reminder</button>`;
 
     const person = (x, role) => `<li><span class="avatar sm">${esc(Q.initials(x.who))}</span><div class="p-main">${Q.who(x.who)}<span>${esc(role)} · ${esc(Q.person(x.who).title)}</span></div>${Q.st(x.state + (x.date ? ' · ' + Q.fmt(x.date) : ''), { 'Completed': 'success', 'Approved': 'success', 'Pending': 'info', 'Changes requested': 'orange', 'Not started': 'neutral' }[x.state])}</li>`;
 
     const html = `<div class="review-page">
-      <div class="review-head">${Q.crumbs([['Documented Information', '#/documents'], ['Routing', '#/review'], [`${d.id} Rev ${w.rev}`]])}
+      <div class="review-head">${Q.crumbs([['Documents', '#/documents'], ['Tasks', '#/tasks'], [`${d.id} Rev ${w.rev}`]])}
         <div class="page-head"><div><h1 tabindex="-1">${esc(d.title)}</h1><div class="meta-line"><span class="tnum">${esc(d.id)}</span><span>Proposed <b>Rev ${esc(w.rev)}</b> · active ${d.rev ? 'Rev ' + esc(d.rev) : 'none'}</span><span>${Q.pcell(d.process)}</span><span>Owner <b>${esc(Q.pname(d.owner))}</b></span><span>${Q.st(Q.wfStatus(w))}</span></div></div>
         <div class="actions"><span class="split-ratio" id="ratio" aria-hidden="true">50 : 50</span><button class="btn sm" type="button" id="resetSplit" title="Reset panels to 50:50">Reset 50:50</button><button class="btn sm" type="button" data-action="open-doc" data-id="${esc(d.id)}">${icon('file-text')}Open Document</button></div></div></div>
       <div class="split" id="split">
@@ -635,7 +638,7 @@
               <ul class="comments">${w.comments.map(c => `<li><span class="avatar sm">${esc(Q.initials(c.who))}</span><div class="c-body"><div class="c-meta">${Q.who(c.who)} · ${Q.fmt(c.date)}</div>${esc(c.text)}</div></li>`).join('') || '<li class="muted small">No comments yet.</li>'}</ul>
               <form class="comment-form" id="commentForm"><label class="sr-only" for="cText">Add a comment</label><textarea class="textarea" id="cText" placeholder="Add a comment for the audit trail"></textarea><button class="btn" type="submit">Comment</button></form></section>
             <section class="panel"><div class="panel-head"><h2>Linked items</h2></div><div class="panel-pad">${Q.linkedItems(d)}</div></section>
-            <section class="panel"><div class="panel-head"><h2>Routing activity</h2><span class="muted small">Rev ${esc(w.rev)}</span></div><div class="panel-pad">${Q.revTimeline(Q.wfTrail(w, rev))}</div></section>
+            <section class="panel"><div class="panel-head"><h2>Workflow activity</h2><span class="muted small">Rev ${esc(w.rev)}</span></div><div class="panel-pad">${Q.revTimeline(Q.wfTrail(w, rev))}</div></section>
             <section class="panel"><div class="panel-head"><h2>Revision history</h2></div><div class="panel-pad">${Q.revList(d, { trail: true, openFirst: false })}</div></section>
           </div>
           <div class="action-bar">${bar}</div>
@@ -709,6 +712,31 @@
         log(`requested changes to ${d.title} Rev ${w.rev}`);
         Q.closeModal(); done('Changes requested', `${Q.pname(w.startedBy)} has been notified.`);
       });
+    } else if (kind === 'resubmit') {
+      // Only the person who submitted the revision can resubmit it, and a changed revision is always re-reviewed:
+      // it goes back to Technical Review and approval starts again afterwards.
+      if (!w.changesRequested || w.startedBy !== me) { Q.toast('Not resubmitted', 'Only the author of this revision can resubmit it.'); return; }
+      const m = Q.openModal({ size: 'm', title: 'Resubmit for Technical Review', sub: `${esc(d.id)} Rev ${esc(w.rev)} · ${esc(d.title)}`,
+        body: `<form class="modal-body"><label class="field"><span>What was changed? <span class="req">*</span></span><textarea class="textarea" name="c" required autofocus></textarea><span class="help">Recorded in the audit trail. The revision returns to Technical Review; approval follows after the review is completed again.</span></label></form>`,
+        foot: `<button class="btn" type="button" data-close>Cancel</button><button class="btn primary" type="button" data-ok>Resubmit</button>` });
+      m.querySelector('[data-ok]').addEventListener('click', () => {
+        const f = m.querySelector('form'); if (!Q.validate(f)) return;
+        const text = Q.formValues(f).c;
+        // Keep the finished round in the audit trail before the reviewers are asked again.
+        const round = [[w.reviewers, 'completed review of', 'Review', 'file-check'], [w.approvers, 'approved', 'Approval', 'stamp']].flatMap(([list, verb, stage, ic]) => list.filter(x => x.date).map(x => {
+          const changes = x.state === 'Changes requested', c = w.comments.find(y => !y.logged && y.who === x.who && y.date === x.date);
+          if (c) c.logged = true;
+          return { at: x.date, who: x.who, verb: changes ? 'requested changes to' : verb, obj: `Rev ${w.rev}`, quote: c?.text || '', stage: changes ? 'Changes' : stage, icon: changes ? 'message-square' : ic };
+        }));
+        w.history = [...(w.history || []), ...round, { at: today, who: me, verb: 'resubmitted', obj: `Rev ${w.rev}`, quote: text, stage: 'Review', icon: 'send' }];
+        w.changesRequested = false; w.stage = 'review';
+        w.reviewers.forEach(x => { x.state = 'Pending'; delete x.date; });
+        w.approvers.forEach(x => { x.state = 'Not started'; delete x.date; });
+        d.status = 'In Review'; d.updated = today;
+        w.comments.push({ who: me, date: today, text, logged: true });
+        log(`resubmitted ${d.title} Rev ${w.rev} for technical review`);
+        Q.closeModal(); done('Resubmitted for Technical Review', `Sent to ${w.reviewers.map(x => Q.pname(x.who)).join(', ')}.`);
+      });
     } else if (kind === 'publish') {
       Q.confirm({ title: 'Confirm Publication', confirm: 'Publish',
         body: `<p><b>${esc(d.id)} Rev ${esc(w.rev)}</b> — ${esc(d.title)}</p><ul style="margin:12px 0 0;padding-left:20px;line-height:24px"><li>Rev ${esc(w.rev)} becomes the active controlled version from <b>${Q.fmt(today)}</b>.</li>${d.rev ? `<li>Rev ${esc(d.rev)} is marked <b>Superseded</b> and stays in revision history.</li>` : ''}<li>Next periodic review: <b>${Q.fmt(Q.addYears(today, 1))}</b>.</li></ul>`,
@@ -720,7 +748,7 @@
           Object.assign(d, { rev: w.rev, workingRev: null, status: 'Published', updated: today, effective: today, nextReview: Q.addYears(today, 1) });
           Q.S.workflows = Q.S.workflows.filter(x => x.id !== w.id);
           log(`published ${d.title} Rev ${w.rev}`);
-          Q.save(); Q.renderSidebar(); Q.go('#/review');
+          Q.save(); Q.renderSidebar(); Q.go('#/tasks');
           Q.toast(`Rev ${w.rev} published`, `${d.id} Rev ${w.rev} is now the active controlled version.`);
         } });
     }
