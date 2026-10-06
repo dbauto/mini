@@ -1,0 +1,29 @@
+name: V1 static checks
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "index.html"
+      - "assets/mini-v1.js"
+      - "assets/documents.js"
+      - "assets/mini-v1.css"
+      - ".github/workflows/v1-check.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: JavaScript syntax
+        run: |
+          node --check assets/mini-v1.js
+          node --check assets/documents.js
+          node --check assets/core.js
+      - name: V1 assets are loaded
+        run: |
+          grep -q 'assets/mini-v1.css' index.html
+          grep -q 'assets/mini-v1.js' index.html
