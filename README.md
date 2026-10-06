@@ -12,18 +12,82 @@ This repository is the **document-management-first** client version. It was spli
 - Changes requested / resubmission loop
 - Approval
 - Final **Publish**
+- **Dashboard**: document-control KPIs, workflow chart, Needs Attention, My Work, Document Control Health, Recent Activity
 - Documents in Review work queue
 - Comments and activity / audit trail
 - Process / area assignment and ISO clause context
 - User/access and workspace settings
 
-The visible V1 sidebar is intentionally limited to **Overview, Document Control, Documents in Review, ISO QMS Structure, and Settings**. Risk, audit, survey, KPI and other broader modules remain in the underlying prototype only as future/customization work and are not part of the V1 navigation.
+The visible V1 sidebar is intentionally limited to **Dashboard · Document Control (Documents, In Review) · Organization (ISO QMS Structure) · Settings**. Risk, audit, survey, KPI and other broader modules remain in the underlying prototype only as future/customization work and are not part of the V1 navigation.
 
 ### Controlled lifecycle
 
 `Draft → Technical Review → Changes Requested (when needed) → Approval → Ready to Publish → Published`
 
 The currently published revision remains the controlled version until the replacement revision is published.
+
+## Mini Dashboard kit
+
+Replaces the old "Document Control Overview" page at `#/overview` with an operational Dashboard and restyles the shell around it (sidebar, top bar, cards, buttons, dark theme). Nothing else changes: documents, the Documents in Review queue, the review page and Settings work as before.
+
+### What is on the Dashboard
+
+| Card | Shows | Opens |
+|---|---|---|
+| Controlled documents | All document records; note: published · in progress | Document Library |
+| Technical Review / Awaiting Approval / Ready to Publish | Revisions at that stage. A red "n overdue" replaces the note when any are past due | The matching tab of Documents in Review |
+| Document Workflow | Revisions in progress per stage (Draft, Technical Review, Changes Requested, Approval, Ready to Publish) as columns; published documents as a separate bar, because 54 published against 1–3 per stage would flatten the columns | Each column opens its stage |
+| Needs Attention | Up to 5 rows, most urgent first: tasks past due, documents overdue for periodic review, tasks due within 7 days, revisions waiting on authors, approved revisions ready to publish, drafts not yet submitted. Rows with nothing to do are left out | The filtered queue or library view |
+| Document Control Health | One score with the four checks behind it | (explanation behind ⓘ) |
+| My Work | Up to 8 items waiting on the signed-in user: queue items where they have the next action, plus their own unsubmitted drafts | The review page, or the document for a draft |
+| Recent Activity | The last 5 document events: person, action, document, date | The document |
+
+**Export** downloads the revisions in progress as CSV. **New / Revise Document** is unchanged.
+
+### Where the numbers come from
+
+Everything is calculated from the application state on each render; no figure is typed in. `Q.tasks()` (in `assets/mini-dashboard.js`) builds one record per revision in progress:
+
+- a **draft** is a document with a working revision and no workflow (`documents.workingRev`, no entry in `workflows`);
+- every other stage comes from the workflow: Technical Review (`stage: 'review'`), Changes Requested (`changesRequested`), Approval (`stage: 'approval'`), Ready to Publish (`stage: 'publication'`);
+- who has the next action is `Q.wfAssignees(w)`; overdue means `due` is before today; due soon means within 7 days.
+
+The stage counts are the same sets the Documents in Review tabs list, so the Dashboard and the queue always agree. The sidebar badge next to **In Review** is the queue's "My action" count.
+
+### Document Control Health (`Q.docControlHealth()`)
+
+The plain average of four checks, each a percentage:
+
+| Check | Formula |
+|---|---|
+| Periodic reviews on time | issued documents with a next-review date that is not past ÷ issued documents with a next-review date |
+| Tasks within due date | revisions in progress that are not overdue ÷ revisions in progress that have a due date |
+| Source links available | documents whose source link is connected ÷ all documents |
+| Document details complete | documents with title, type, process, owner, description and classification ÷ all documents |
+
+- **State:** 85% and above "On track", 70–84% "Needs attention", below 70% "At risk". Shown in words as well as colour.
+- **It is an internal indicator**, not an ISO certification or a compliance score, and the card says so behind ⓘ.
+
+### Changes outside the Dashboard
+
+- **Sidebar:** flush and labelled by default (it can still be unpinned to the icon rail). Items: Dashboard · Documents · In Review · ISO QMS Structure · Settings.
+- **Top bar:** search, light/dark toggle, notifications, account. The Help button is hidden (shortcuts and About remain in the account menu). The light/dark toggle had no icon in the light theme because the icon set had no `moon`; it is added.
+- **Documents in Review:** one new filter, **Due date** (Any / Overdue / Due within 7 days). A link that names a tab or a due filter (`#/review?show=approval`, `#/review?show=all&due=overdue`) now always opens on those rows; without one, the table keeps what the user last chose.
+- **Design tokens** (`assets/mini-v1.css`): one radius scale (controls 8px, cards 12px), hairline borders with an almost-flat shadow, flat buttons with a single solid green primary, a lifecycle colour ramp, and a complete dark theme. In dark mode the document preview stays paper-white and its contents keep their light colours.
+
+### Files
+
+- `assets/mini-dashboard.js`, `assets/mini-dashboard.css` (new): the Dashboard.
+- `assets/mini-v1.js`, `assets/mini-v1.css`: navigation, queue filter, tokens, shell, dark theme.
+- `index.html`, `vendor/lucide.min.js` (adds the `moon` icon).
+- `scripts/smoke.sh`, `.github/workflows/v1-check.yml`: the checks, now rendering the pages in light and dark.
+
+### Checks
+
+```bash
+node scripts/serve.cjs &          # http://localhost:4173
+bash scripts/smoke.sh             # renders the V1 routes in headless Chrome, light and dark
+```
 
 ---
 

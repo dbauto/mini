@@ -6,8 +6,25 @@ on:
     paths:
       - "index.html"
       - "assets/mini-v1.js"
-      - "assets/documents.js"
       - "assets/mini-v1.css"
+      - "assets/mini-dashboard.js"
+      - "assets/mini-dashboard.css"
+      - "assets/documents.js"
+      - "assets/core.js"
+      - "vendor/lucide.min.js"
+      - "scripts/smoke.sh"
+      - ".github/workflows/v1-check.yml"
+  pull_request:
+    paths:
+      - "index.html"
+      - "assets/mini-v1.js"
+      - "assets/mini-v1.css"
+      - "assets/mini-dashboard.js"
+      - "assets/mini-dashboard.css"
+      - "assets/documents.js"
+      - "assets/core.js"
+      - "vendor/lucide.min.js"
+      - "scripts/smoke.sh"
       - ".github/workflows/v1-check.yml"
 
 permissions:
@@ -21,20 +38,18 @@ jobs:
       - name: JavaScript syntax
         run: |
           node --check assets/mini-v1.js
+          node --check assets/mini-dashboard.js
           node --check assets/documents.js
           node --check assets/core.js
       - name: V1 assets are loaded
         run: |
           grep -q 'assets/mini-v1.css' index.html
           grep -q 'assets/mini-v1.js' index.html
+          grep -q 'assets/mini-dashboard.css' index.html
+          grep -q 'assets/mini-dashboard.js' index.html
 
-      - name: Browser smoke test
+      - name: Browser smoke test (light and dark)
         run: |
           python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/mini-http.log 2>&1 &
           sleep 1
-          BROWSER="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser)"
-          test -n "$BROWSER"
-          "$BROWSER" --headless --no-sandbox --disable-gpu --virtual-time-budget=4000 --dump-dom 'http://127.0.0.1:4173/#/overview' >/tmp/mini-dom.html 2>/tmp/mini-browser.log
-          grep -q 'Document Control Overview' /tmp/mini-dom.html
-          grep -q 'New / Revise Document' /tmp/mini-dom.html
-          grep -q 'Documents in Review' /tmp/mini-dom.html
+          bash scripts/smoke.sh
