@@ -5,8 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Document Control · iQMS</title>
   <meta name="description" content="iQMS Document Control — controlled documents, revision workflow, approval and ISO QMS structure.">
+  <script>
+    (() => {
+      let pref = 'system';
+      try { pref = localStorage.getItem('iqms.mini.appearance') || 'system'; } catch (_) {}
+      const dark = pref === 'dark' || (pref === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
+      const mode = dark ? 'dark' : 'light';
+      document.documentElement.dataset.colorMode = mode;
+      document.documentElement.dataset.appearancePref = pref;
+      document.documentElement.style.colorScheme = mode;
+    })();
+  </script>
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="assets/app.css?v=102">\n  <link rel="stylesheet" href="assets/mini-v1.css?v=1">
+  <link rel="stylesheet" href="assets/app.css?v=102">
+  <link rel="stylesheet" href="assets/mini-v1.css?v=2">
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -73,7 +85,8 @@
   <script src="assets/admin.js?v=102"></script>
   <script src="assets/settings-extra.js?v=102"></script>
   <script src="assets/theme.js?v=102"></script>
-  <script src="assets/account.js?v=102"></script>\n  <script src="assets/mini-v1.js?v=1"></script>
+  <script src="assets/account.js?v=102"></script>
+  <script src="assets/mini-v1.js?v=2"></script>
   <script>Q.boot();</script>
 </body>
 </html>
