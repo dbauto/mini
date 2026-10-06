@@ -444,6 +444,16 @@
     };
   }
 
+  /* Settings → UI Components documents the prototype's `ui-` kit. Point to the dashboard kit from there. */
+  if (Q.settingsViews?.['ui-library']) {
+    const baseLibrary = Q.settingsViews['ui-library'];
+    Q.settingsViews['ui-library'] = q => {
+      const view = baseLibrary(q);
+      view.html = `<div class="callout" style="margin-bottom:16px">${icon('blocks')}<span><b>Dashboard Kit</b>The Dashboard is built from its own kit of tokens and components. <a href="kit/" target="_blank" rel="noopener">Open the kit reference</a> to see each one with the code to use it.</span></div>` + view.html;
+      return view;
+    };
+  }
+
   /* ---------- Top bar scope ----------
    * Global search and notifications only cover what V1 exposes: documents, processes and people. */
   Q.searchScope = list => list.filter(r => ['Processes', 'Documents'].includes(r.g)).concat(

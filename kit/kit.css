@@ -1,0 +1,445 @@
+/* Dashboard kit — tokens and components for the Document Control dashboard design.
+ *
+ * Self-contained: this file, icons.js and kit.js are all a page needs. Nothing here depends on the
+ * application stylesheet, and every class is prefixed `dk-` so the kit can sit next to other CSS.
+ *
+ *   1. Tokens ........ light values on :root, dark values under [data-theme="dark"] / [data-color-mode="dark"]
+ *   2. Base .......... .dk-app (page ground and type), icons, focus ring
+ *   3. Shell ......... sidebar, top bar, page
+ *   4. Controls ...... button, segmented control, search box
+ *   5. Small parts ... avatar, badge, count, info tip, stage, due, meter
+ *   6. Cards ......... card, metric card
+ *   7. Data .......... column chart, gauge, factor list
+ *   8. Lists ......... action rows, work rows, activity, empty state
+ *   9. Layout ........ dashboard grid (reacts to the width of the page, not the window)
+ *
+ * Rules the design depends on (see README.md):
+ *   - one solid green action per page; every other control is quiet
+ *   - one dark "feature" card per page at most
+ *   - green ramp = progress through the lifecycle, amber = needs attention, red = overdue only
+ *   - colour never carries meaning alone: every state also has a word or an icon
+ */
+
+/* ============================================================== 1. Tokens */
+:root {
+  /* Surfaces: neutral with a slight green bias so the forest accent sits naturally. */
+  --dk-bg: #F4F6F5;
+  --dk-surface: #FFFFFF;
+  --dk-surface-2: #F7F9F8;
+  --dk-border: #E3E8E5;
+  --dk-border-strong: #CDD5D1;
+  --dk-hover: #F4F7F5;
+  --dk-neutral-bg: #F1F3F4;
+
+  /* Text: 3 steps. --dk-text-3 is the lightest that still reads 5:1 on the canvas. */
+  --dk-text: #17231E;
+  --dk-text-2: #4A5752;
+  --dk-text-3: #5F6B65;
+
+  /* Brand */
+  --dk-accent: #1F6F4A;
+  --dk-accent-hover: #185C3D;
+  --dk-accent-soft: #E8F2EC;
+  --dk-on-accent: #FFFFFF;
+
+  /* Status: reserved for state, never used as decoration. */
+  --dk-success: #1B7A4B;  --dk-success-bg: #EAF5EF;
+  --dk-warning: #9A6200;  --dk-warning-bg: #FDF4E1;
+  --dk-danger: #B42318;   --dk-danger-bg: #FDECEA;
+  --dk-info: #1F5FAD;     --dk-info-bg: #EAF1FB;
+
+  /* Sidebar (dark forest in both themes) */
+  --dk-sidebar-bg: #0E3B2C;
+  --dk-sidebar-text: #D7E6DE;
+  --dk-sidebar-muted: #93B1A3;
+  --dk-sidebar-hover: rgba(255, 255, 255, .07);
+  --dk-sidebar-active: rgba(255, 255, 255, .12);
+  --dk-sidebar-accent: #7FD1A6;
+  --dk-sidebar-line: rgba(255, 255, 255, .08);
+  --dk-brand-mark: #1C6A4A;
+
+  /* Feature surface: the one emphasised card on a page. */
+  --dk-feature-bg: var(--dk-sidebar-bg);
+  --dk-feature-border: var(--dk-sidebar-bg);
+  --dk-feature-ink: #FFFFFF;
+  --dk-feature-muted: rgba(255, 255, 255, .72);
+  --dk-feature-chip: rgba(255, 255, 255, .12);
+
+  /* Lifecycle: one green getting deeper towards publication. Draft is neutral and drawn hollow;
+     amber is the one stage that needs someone's attention. */
+  --dk-stage-draft: #97A39D;
+  --dk-stage-review: color-mix(in srgb, var(--dk-accent) 40%, #FFFFFF);
+  --dk-stage-changes: #D9992B;
+  --dk-stage-approval: color-mix(in srgb, var(--dk-accent) 72%, #FFFFFF);
+  --dk-stage-publish: var(--dk-accent);
+  --dk-stage-published: color-mix(in srgb, var(--dk-accent) 72%, #000000);
+  --dk-track: #E9EDEB;               /* unfilled part of meters and gauges */
+
+  /* Tooltip */
+  --dk-tip-bg: #1C2321;
+  --dk-tip-ink: #FFFFFF;
+
+  /* Shape: controls 8px, cards 12px. */
+  --dk-r-sm: 6px;
+  --dk-r-md: 8px;
+  --dk-r-lg: 12px;
+
+  /* Elevation: cards are almost flat; only floating layers cast a real shadow. */
+  --dk-shadow-card: 0 1px 2px rgba(16, 40, 30, .05);
+  --dk-shadow-float: 0 8px 24px rgba(16, 40, 30, .14), 0 2px 6px rgba(16, 40, 30, .08);
+  --dk-focus: 0 0 0 2px var(--dk-surface), 0 0 0 4px var(--dk-accent);
+
+  /* Type: compact enterprise scale. */
+  --dk-font: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Roboto, Arial, sans-serif;
+  --dk-fs-page: 24px;     --dk-lh-page: 30px;
+  --dk-fs-section: 16px;  --dk-lh-section: 24px;
+  --dk-fs-metric: 28px;   --dk-lh-metric: 34px;
+  --dk-fs-body: 14px;     --dk-lh-body: 22px;
+  --dk-fs-small: 13px;    --dk-lh-small: 19px;
+  --dk-fs-meta: 12px;     --dk-lh-meta: 17px;
+
+  /* Space and sizes */
+  --dk-gap: 16px;                    /* between cards */
+  --dk-pad: 18px;                    /* inside cards */
+  --dk-control-h: 36px;
+  --dk-control-h-sm: 32px;
+  --dk-sidebar-w: 224px;
+  --dk-header-h: 56px;
+}
+
+/* Dark: deep charcoal-green ground, slightly lighter surfaces, a softer green accent. Not an inversion. */
+:root[data-theme="dark"], :root[data-color-mode="dark"] {
+  color-scheme: dark;
+  --dk-bg: #0E1412;
+  --dk-surface: #151C19;
+  --dk-surface-2: #1A2320;
+  --dk-border: #27322D;
+  --dk-border-strong: #3A4741;
+  --dk-hover: #1E2723;
+  --dk-neutral-bg: #232C28;
+
+  --dk-text: #E9F0EC;
+  --dk-text-2: #BFCCC5;
+  --dk-text-3: #8D9C95;
+
+  --dk-accent: #74A68F;
+  --dk-accent-hover: #8BB4A1;
+  --dk-accent-soft: #172E24;
+  --dk-on-accent: #07110C;
+
+  --dk-success: #67D193;  --dk-success-bg: #153525;
+  --dk-warning: #E7B75B;  --dk-warning-bg: #3A2B10;
+  --dk-danger: #F2857E;   --dk-danger-bg: #401D1B;
+  --dk-info: #7EB2F1;     --dk-info-bg: #142B48;
+
+  --dk-sidebar-bg: #0B291E;
+  --dk-brand-mark: #5C947D;
+
+  --dk-feature-bg: color-mix(in srgb, var(--dk-accent) 15%, var(--dk-surface));
+  --dk-feature-border: color-mix(in srgb, var(--dk-accent) 34%, var(--dk-border));
+  --dk-feature-ink: var(--dk-text);
+  --dk-feature-muted: var(--dk-text-2);
+  --dk-feature-chip: color-mix(in srgb, var(--dk-accent) 18%, transparent);
+
+  --dk-stage-draft: #6F7D76;
+  --dk-stage-review: color-mix(in srgb, var(--dk-accent) 40%, var(--dk-surface));
+  --dk-stage-changes: #E7B75B;
+  --dk-stage-approval: color-mix(in srgb, var(--dk-accent) 68%, var(--dk-surface));
+  --dk-stage-publish: var(--dk-accent);
+  --dk-stage-published: color-mix(in srgb, var(--dk-accent) 80%, #FFFFFF);
+  --dk-track: #26312C;
+
+  --dk-tip-bg: #2A3631;
+
+  --dk-shadow-card: 0 1px 2px rgba(0, 0, 0, .3);
+  --dk-shadow-float: 0 10px 30px rgba(0, 0, 0, .42), 0 2px 8px rgba(0, 0, 0, .26);
+}
+
+/* ============================================================== 2. Base */
+[class^="dk-"], [class*=" dk-"] { box-sizing: border-box; }
+[class^="dk-"]:focus-visible, [class*=" dk-"]:focus-visible { outline: none; box-shadow: var(--dk-focus); }
+@media (prefers-reduced-motion: reduce) { [class^="dk-"], [class*=" dk-"] { transition: none !important; } }
+
+/* Put .dk-app on <body> of a page built only with the kit. */
+.dk-app { margin: 0; background: var(--dk-bg); color: var(--dk-text); font: var(--dk-fs-body)/var(--dk-lh-body) var(--dk-font); -webkit-font-smoothing: antialiased; }
+.dk-app h1, .dk-app h2, .dk-app h3, .dk-app p { margin: 0; }
+.dk-app button, .dk-app input, .dk-app select { font: inherit; color: inherit; }
+
+.dk-icon { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+.dk-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.dk-num { font-variant-numeric: tabular-nums; }
+
+/* ============================================================== 3. Shell */
+.dk-shell { min-height: 100vh; }
+.dk-sidebar { position: fixed; inset: 0 auto 0 0; z-index: 40; width: var(--dk-sidebar-w); display: flex; flex-direction: column; background: var(--dk-sidebar-bg); color: var(--dk-sidebar-text); }
+.dk-sidebar-brand { display: flex; align-items: center; gap: 10px; height: var(--dk-header-h); padding: 0 14px; border-bottom: 1px solid var(--dk-sidebar-line); flex: none; }
+.dk-brand-mark { width: 36px; height: 36px; display: grid; place-items: center; flex: none; border-radius: var(--dk-r-md); background: var(--dk-brand-mark); color: #fff; font-size: 13px; font-weight: 700; letter-spacing: .02em; }
+.dk-brand-name { min-width: 0; line-height: 18px; }
+.dk-brand-name b { display: block; font-size: 14px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dk-brand-name span { display: block; font-size: var(--dk-fs-meta); color: var(--dk-sidebar-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dk-nav { flex: 1; overflow-y: auto; padding: 10px 0 12px; scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, .2) transparent; }
+.dk-nav-foot { flex: none; padding: 8px 0; border-top: 1px solid var(--dk-sidebar-line); }
+.dk-nav-label { display: flex; align-items: center; height: 30px; margin-top: 10px; padding: 0 22px; font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--dk-sidebar-muted); white-space: nowrap; }
+.dk-nav-item { position: relative; display: flex; align-items: center; gap: 11px; width: calc(100% - 20px); height: 36px; margin: 1px 10px; padding: 0 12px; border: 0; border-radius: var(--dk-r-md); background: none; color: var(--dk-sidebar-text); font-size: 13.5px; text-align: left; text-decoration: none; white-space: nowrap; cursor: pointer; }
+.dk-nav-item .dk-icon { width: 17px; height: 17px; color: var(--dk-sidebar-muted); }
+.dk-nav-item > span:first-of-type { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.dk-nav-item:hover { background: var(--dk-sidebar-hover); color: #fff; text-decoration: none; }
+.dk-nav-item:hover .dk-icon { color: #fff; }
+.dk-nav-item:focus-visible { box-shadow: 0 0 0 2px var(--dk-sidebar-accent); }
+.dk-nav-item[aria-current="page"] { background: var(--dk-sidebar-active); color: #fff; font-weight: 600; }
+.dk-nav-item[aria-current="page"] .dk-icon { color: var(--dk-sidebar-accent); }
+.dk-nav-item[aria-current="page"]::before { content: ""; position: absolute; left: -10px; top: 9px; bottom: 9px; width: 3px; border-radius: 0 3px 3px 0; background: var(--dk-sidebar-accent); }
+.dk-nav-count { min-width: 20px; height: 18px; padding: 0 6px; border-radius: 9px; background: rgba(255, 255, 255, .14); color: #fff; font-size: 11px; font-weight: 600; line-height: 18px; text-align: center; font-variant-numeric: tabular-nums; }
+
+.dk-main { min-height: 100vh; margin-left: var(--dk-sidebar-w); }
+.dk-topbar { position: sticky; top: 0; z-index: 30; display: flex; align-items: center; gap: 12px; height: var(--dk-header-h); padding: 0 24px; background: var(--dk-surface); border-bottom: 1px solid var(--dk-border); }
+.dk-topbar-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.dk-iconbtn.dk-menu-btn { display: none; }   /* shown under 1024px, where the sidebar is a drawer */
+.dk-page { max-width: 1560px; padding: 22px 24px 48px; }
+
+.dk-user { display: flex; align-items: center; gap: 10px; padding: 4px 8px 4px 4px; border: 0; border-radius: var(--dk-r-md); background: none; text-align: left; line-height: 16px; white-space: nowrap; cursor: pointer; }
+.dk-user:hover { background: var(--dk-hover); }
+.dk-user b { display: block; font-size: 13px; font-weight: 600; color: var(--dk-text); }
+.dk-user small { display: block; font-size: 12px; color: var(--dk-text-3); }
+.dk-user > .dk-icon { width: 14px; height: 14px; color: var(--dk-text-3); }
+
+.dk-pagehead { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 20px; }
+.dk-pagehead h1 { margin: 0; font-size: var(--dk-fs-page); line-height: var(--dk-lh-page); font-weight: 600; letter-spacing: -.01em; color: var(--dk-text); }
+.dk-pagehead p { margin: 4px 0 0; max-width: 720px; font-size: var(--dk-fs-body); line-height: 20px; color: var(--dk-text-2); }
+.dk-pagehead-actions { margin-left: auto; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+
+@media (max-width: 1023px) {
+  .dk-sidebar { transform: translateX(-100%); transition: transform .18s ease; }
+  .dk-shell.dk-nav-open .dk-sidebar { transform: none; box-shadow: var(--dk-shadow-float); }
+  .dk-shell.dk-nav-open::after { content: ""; position: fixed; inset: 0; z-index: 35; background: rgba(12, 28, 21, .4); }
+  .dk-main { margin-left: 0; }
+  .dk-iconbtn.dk-menu-btn { display: grid; }
+  .dk-user > span, .dk-user > .dk-icon { display: none; }
+}
+@media (max-width: 720px) {
+  .dk-topbar { padding: 0 16px; }
+  .dk-page { padding: 16px 16px 40px; }
+  .dk-pagehead { flex-direction: column; gap: 16px; }
+  .dk-pagehead-actions { margin-left: 0; justify-content: flex-start; }
+}
+
+/* ============================================================== 4. Controls */
+.dk-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: var(--dk-control-h); padding: 0 14px; border: 1px solid var(--dk-border-strong); border-radius: var(--dk-r-md); background: var(--dk-surface); color: var(--dk-text); font-size: var(--dk-fs-body); font-weight: 500; line-height: 20px; white-space: nowrap; text-decoration: none; cursor: pointer; }
+.dk-btn:hover { background: var(--dk-hover); text-decoration: none; }
+.dk-btn.primary { background: var(--dk-accent); border-color: var(--dk-accent); color: var(--dk-on-accent); }
+.dk-btn.primary:hover { background: var(--dk-accent-hover); border-color: var(--dk-accent-hover); }
+:root[data-theme="dark"] .dk-btn.primary, :root[data-color-mode="dark"] .dk-btn.primary { font-weight: 600; }   /* dark ink on a light-green fill */
+.dk-btn.ghost { border-color: transparent; background: none; color: var(--dk-accent); }
+.dk-btn.ghost:hover { background: var(--dk-accent-soft); }
+.dk-btn.sm { height: var(--dk-control-h-sm); padding: 0 10px; font-size: var(--dk-fs-small); }
+.dk-btn[disabled] { opacity: .5; cursor: not-allowed; }
+.dk-iconbtn { position: relative; width: var(--dk-control-h); height: var(--dk-control-h); display: grid; place-items: center; flex: none; border: 1px solid transparent; border-radius: var(--dk-r-md); background: none; color: var(--dk-text-2); cursor: pointer; }
+.dk-iconbtn:hover { background: var(--dk-hover); color: var(--dk-text); }
+.dk-iconbtn .dk-icon { width: 18px; height: 18px; }
+.dk-iconbtn-dot { position: absolute; top: 0; left: 18px; min-width: 20px; height: 20px; padding: 0 4px; border: 2px solid var(--dk-surface); border-radius: 10px; background: var(--dk-danger); color: var(--dk-surface); font-size: 12px; font-weight: 600; line-height: 16px; text-align: center; }
+
+.dk-seg { display: inline-flex; max-width: 100%; overflow-x: auto; scrollbar-width: none; border: 1px solid var(--dk-border-strong); border-radius: var(--dk-r-md); background: var(--dk-surface); }
+.dk-seg button { display: inline-flex; align-items: center; gap: 6px; flex: none; height: 34px; padding: 0 12px; border: 0; border-right: 1px solid var(--dk-border); background: none; color: var(--dk-text-2); font-size: var(--dk-fs-small); white-space: nowrap; cursor: pointer; }
+.dk-seg button:last-child { border-right: 0; }
+.dk-seg button:hover { color: var(--dk-text); }
+.dk-seg button[aria-pressed="true"] { background: var(--dk-accent-soft); color: var(--dk-accent); font-weight: 600; }
+.dk-seg small { font-size: inherit; font-weight: 400; color: var(--dk-text-3); font-variant-numeric: tabular-nums; }
+
+.dk-search { display: flex; align-items: center; gap: 8px; flex: 0 1 420px; min-width: 0; height: var(--dk-control-h); padding: 0 12px; border: 1px solid var(--dk-border); border-radius: var(--dk-r-md); background: var(--dk-surface-2); color: var(--dk-text-3); }
+.dk-search:focus-within { border-color: var(--dk-accent); background: var(--dk-surface); box-shadow: 0 0 0 3px var(--dk-accent-soft); }
+.dk-search input { flex: 1; min-width: 0; border: 0; outline: 0; background: none; color: var(--dk-text); font: inherit; }
+.dk-search input::placeholder { color: var(--dk-text-3); }
+.dk-search kbd { padding: 0 6px; border: 1px solid var(--dk-border); border-radius: 4px; font: 12px/18px var(--dk-font); color: var(--dk-text-3); }
+
+/* ============================================================== 5. Small parts */
+.dk-avatar { width: 30px; height: 30px; display: grid; place-items: center; flex: none; border-radius: 50%; background: var(--dk-accent-soft); color: var(--dk-accent); font-size: 12px; font-weight: 600; }
+.dk-avatar.sm { width: 24px; height: 24px; }
+.dk-avatar.lg { width: 44px; height: 44px; font-size: 15px; }
+.dk-avatars { display: inline-flex; flex: none; }
+.dk-avatars .dk-avatar + .dk-avatar { margin-left: -6px; box-shadow: 0 0 0 2px var(--dk-surface); }
+.dk-avatar.more { background: var(--dk-neutral-bg); color: var(--dk-text-2); font-size: 10px; }
+
+.dk-badge { display: inline-flex; align-items: center; gap: 5px; padding: 0 8px; border-radius: 999px; background: var(--dk-neutral-bg); color: var(--dk-text-2); font-size: 12px; line-height: 20px; font-weight: 500; white-space: nowrap; }
+.dk-badge.success { background: var(--dk-success-bg); color: var(--dk-success); }
+.dk-badge.warning { background: var(--dk-warning-bg); color: var(--dk-warning); }
+.dk-badge.danger { background: var(--dk-danger-bg); color: var(--dk-danger); }
+.dk-badge.info { background: var(--dk-info-bg); color: var(--dk-info); }
+.dk-badge.accent { background: var(--dk-accent-soft); color: var(--dk-accent); }
+
+.dk-count { display: inline-grid; place-items: center; min-width: 22px; height: 20px; padding: 0 6px; border-radius: 999px; background: var(--dk-neutral-bg); color: var(--dk-text-2); font-size: 12px; font-weight: 500; font-variant-numeric: tabular-nums; }
+
+/* Explanation behind an (i): shown on hover and on keyboard focus. `.left` opens it towards the left. */
+.dk-info { position: relative; width: 18px; height: 18px; display: inline-grid; place-items: center; flex: none; border-radius: 50%; color: var(--dk-text-3); cursor: help; }
+.dk-info .dk-icon { width: 14px; height: 14px; }
+.dk-info:hover, .dk-info:focus-visible { color: var(--dk-text); }
+.dk-info::after { content: attr(data-tip); position: absolute; z-index: 30; top: calc(100% + 8px); left: 50%; transform: translateX(-50%); display: none; width: max-content; max-width: 280px; padding: 8px 10px; border-radius: 8px; background: var(--dk-tip-bg); color: var(--dk-tip-ink); font-size: 12px; line-height: 17px; font-weight: 400; text-align: left; white-space: normal; box-shadow: var(--dk-shadow-float); pointer-events: none; }
+.dk-info.left::after { left: auto; right: -10px; transform: none; }
+.dk-info:hover::after, .dk-info:focus-visible::after { display: block; }
+
+/* Lifecycle stage → colour, in one place. Anything carrying data-stage can read var(--dk-stage). */
+[data-stage="draft"] { --dk-stage: var(--dk-stage-draft); }
+[data-stage="review"] { --dk-stage: var(--dk-stage-review); }
+[data-stage="changes"] { --dk-stage: var(--dk-stage-changes); }
+[data-stage="approval"] { --dk-stage: var(--dk-stage-approval); }
+[data-stage="publish"] { --dk-stage: var(--dk-stage-publish); }
+[data-stage="published"] { --dk-stage: var(--dk-stage-published); }
+.dk-stage { display: inline-flex; align-items: center; gap: 7px; min-width: 0; font-size: 12.5px; line-height: 18px; font-weight: 500; color: var(--dk-text-2); white-space: nowrap; }
+.dk-stage i { width: 8px; height: 8px; flex: none; border-radius: 2px; background: var(--dk-stage, var(--dk-stage-draft)); }
+.dk-stage[data-stage="draft"] i { background: none; box-shadow: inset 0 0 0 1.5px var(--dk-stage-draft); }
+
+.dk-due { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; line-height: 18px; color: var(--dk-text-3); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.dk-due .dk-icon { width: 13px; height: 13px; }
+.dk-due.soon { color: var(--dk-warning); font-weight: 600; }
+.dk-due.overdue { color: var(--dk-danger); font-weight: 600; }
+
+.dk-meter { display: block; height: 6px; border-radius: 3px; background: var(--dk-track); overflow: hidden; }
+.dk-meter i { display: block; width: var(--v, 0%); height: 100%; border-radius: 3px; background: var(--dk-accent); }
+.dk-meter.warning i { background: var(--dk-stage-changes); }
+.dk-meter.danger i { background: var(--dk-danger); }
+.dk-meter.published i { background: var(--dk-stage-published); }
+
+/* ============================================================== 6. Cards */
+.dk-card { display: flex; flex-direction: column; min-width: 0; border: 1px solid var(--dk-border); border-radius: var(--dk-r-lg); background: var(--dk-surface); box-shadow: var(--dk-shadow-card); color: var(--dk-text); }
+.dk-card-head { display: flex; align-items: center; gap: 8px; min-height: 52px; padding: 12px var(--dk-pad); border-bottom: 1px solid var(--dk-border); }
+.dk-card-head h2 { margin: 0; font-size: var(--dk-fs-section); line-height: var(--dk-lh-section); font-weight: 600; }
+.dk-card-tools { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.dk-link { display: inline-flex; align-items: center; gap: 2px; font-size: var(--dk-fs-small); font-weight: 500; color: var(--dk-text-2); text-decoration: none; white-space: nowrap; }
+.dk-link:hover { color: var(--dk-accent); text-decoration: none; }
+.dk-link .dk-icon { width: 14px; height: 14px; }
+.dk-card-body { flex: 1; min-height: 0; padding: 16px var(--dk-pad); }
+.dk-card-body.flush { padding: 0; }
+
+/* Metric card: label, one number, one short note. Always a link to the list behind the number. */
+.dk-metric { display: flex; flex-direction: column; gap: 4px; min-width: 0; padding: 16px var(--dk-pad) 14px; border: 1px solid var(--dk-border); border-radius: var(--dk-r-lg); background: var(--dk-surface); box-shadow: var(--dk-shadow-card); color: var(--dk-text); text-decoration: none; transition: border-color .15s; }
+.dk-metric:hover { border-color: var(--dk-border-strong); text-decoration: none; }
+.dk-metric-head { display: flex; align-items: center; gap: 6px; min-height: 20px; }
+.dk-metric-label { font-size: var(--dk-fs-small); line-height: 22px; font-weight: 500; color: var(--dk-text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dk-metric-go { margin-left: auto; width: 26px; height: 26px; display: grid; place-items: center; flex: none; border: 1px solid var(--dk-border); border-radius: 50%; color: var(--dk-text-3); transition: color .12s, border-color .12s; }
+.dk-metric-go .dk-icon { width: 14px; height: 14px; }
+.dk-metric:hover .dk-metric-go { color: var(--dk-accent); border-color: var(--dk-accent); }
+.dk-metric-value { font-size: var(--dk-fs-metric); line-height: var(--dk-lh-metric); font-weight: 600; letter-spacing: -.01em; font-variant-numeric: tabular-nums; }
+.dk-metric-foot { display: flex; align-items: center; min-height: 20px; min-width: 0; }
+.dk-metric-note { font-size: var(--dk-fs-meta); line-height: 22px; color: var(--dk-text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dk-metric-flag { display: inline-flex; align-items: center; gap: 5px; font-size: var(--dk-fs-meta); line-height: 22px; font-weight: 600; color: var(--dk-danger); }
+.dk-metric-flag .dk-icon { width: 13px; height: 13px; }
+.dk-metric.feature { background: var(--dk-feature-bg); border-color: var(--dk-feature-border); color: var(--dk-feature-ink); }
+.dk-metric.feature .dk-metric-label, .dk-metric.feature .dk-metric-note { color: var(--dk-feature-muted); }
+.dk-metric.feature .dk-metric-go, .dk-metric.feature:hover .dk-metric-go { border-color: var(--dk-feature-chip); background: var(--dk-feature-chip); color: var(--dk-feature-ink); }
+
+/* ============================================================== 7. Data */
+.dk-lead { margin: 0 0 6px; font-size: var(--dk-fs-small); line-height: 22px; color: var(--dk-text-2); }
+.dk-lead b { margin-right: 4px; font-size: 22px; line-height: 28px; font-weight: 600; color: var(--dk-text); font-variant-numeric: tabular-nums; }
+
+/* Column chart: thin columns on one baseline, value on the cap, label underneath. Each column is a link. */
+.dk-cols { list-style: none; margin: 0; padding: 0; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 4px; }
+.dk-col { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 6px 2px 8px; border-radius: var(--dk-r-md); color: inherit; text-decoration: none; }
+a.dk-col:hover { background: var(--dk-hover); text-decoration: none; }
+.dk-col-plot { width: 100%; height: 128px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px; border-bottom: 1px solid var(--dk-border-strong); }
+.dk-col-value { font-size: 13px; line-height: 16px; font-weight: 600; color: var(--dk-text); font-variant-numeric: tabular-nums; }
+.dk-col-bar { width: 26px; height: calc(var(--h, 0%) * .8); min-height: 3px; border-radius: 5px 5px 0 0; background: var(--dk-stage, var(--dk-accent)); }
+.dk-col-bar[data-stage="draft"] { background: repeating-linear-gradient(-45deg, var(--dk-stage-draft) 0 1.5px, transparent 1.5px 6px); box-shadow: inset 0 1.5px 0 var(--dk-stage-draft), inset 1.5px 0 0 var(--dk-stage-draft), inset -1.5px 0 0 var(--dk-stage-draft); }
+.dk-col-label { min-height: 30px; font-size: 12px; line-height: 15px; color: var(--dk-text-2); text-align: center; text-wrap: balance; }
+
+/* Summary strip under a chart: a label, a meter and the figure. */
+.dk-strip { display: grid; grid-template-columns: auto minmax(48px, 1fr) auto; align-items: center; gap: 12px; margin-top: 12px; padding: 9px 12px; border-radius: var(--dk-r-md); background: var(--dk-surface-2); color: var(--dk-text-2); font-size: 12.5px; line-height: 22px; text-decoration: none; }
+a.dk-strip:hover { background: var(--dk-hover); text-decoration: none; }
+.dk-strip-value { font-variant-numeric: tabular-nums; }
+.dk-strip-value b { font-weight: 600; color: var(--dk-text); }
+
+/* Half-ring gauge: the number is the message, the arc is context. */
+.dk-gauge { position: relative; width: 180px; max-width: 100%; margin: 4px auto 0; }
+.dk-gauge svg { display: block; width: 100%; height: auto; }
+.dk-gauge path { fill: none; stroke-width: 12; stroke-linecap: round; }
+.dk-gauge .trk { stroke: var(--dk-track); }
+.dk-gauge .val { stroke: var(--dk-accent); }
+.dk-gauge .val.warning { stroke: var(--dk-stage-changes); }
+.dk-gauge .val.danger { stroke: var(--dk-danger); }
+.dk-gauge-c { position: absolute; inset: 44% 0 auto; display: flex; flex-direction: column; align-items: center; }
+.dk-gauge-c b { font-size: var(--dk-fs-metric); line-height: 30px; font-weight: 600; letter-spacing: -.01em; font-variant-numeric: tabular-nums; }
+.dk-gauge-state { margin-top: 2px; font-size: 12px; line-height: 16px; font-weight: 600; color: var(--dk-text-2); }
+.dk-gauge-state.success { color: var(--dk-success); }
+.dk-gauge-state.warning { color: var(--dk-warning); }
+.dk-gauge-state.danger { color: var(--dk-danger); }
+
+/* What a score is made of: label, "n of m", a thin meter. */
+.dk-factors { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 10px; }
+.dk-factors li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 8px; font-size: 12.5px; line-height: 17px; }
+.dk-factors li > span:first-child { color: var(--dk-text-2); }
+.dk-factors li > span:nth-child(2) { color: var(--dk-text); font-weight: 600; font-variant-numeric: tabular-nums; }
+.dk-factors .dk-meter { grid-column: 1 / -1; height: 4px; }
+
+/* ============================================================== 8. Lists */
+/* Action rows: the whole row is the link. Tone tints the icon square only. */
+.dk-list { list-style: none; margin: 0; padding: 6px 8px; }
+.dk-row { display: flex; align-items: center; gap: 12px; min-height: 50px; padding: 8px 10px; border-radius: var(--dk-r-md); color: var(--dk-text); text-decoration: none; }
+.dk-row:hover { background: var(--dk-hover); text-decoration: none; }
+.dk-row-icon { width: 32px; height: 32px; display: grid; place-items: center; flex: none; border-radius: 8px; background: var(--dk-neutral-bg); color: var(--dk-text-2); }
+.dk-row.danger .dk-row-icon { background: var(--dk-danger-bg); color: var(--dk-danger); }
+.dk-row.warning .dk-row-icon { background: var(--dk-warning-bg); color: var(--dk-warning); }
+.dk-row-main { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.dk-row-title { font-size: 13.5px; line-height: 19px; font-weight: 500; }
+.dk-row-meta { font-size: var(--dk-fs-meta); line-height: var(--dk-lh-meta); color: var(--dk-text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dk-row-go { display: inline-flex; flex: none; color: var(--dk-text-3); opacity: 0; transition: opacity .12s; }
+.dk-row:hover .dk-row-go, .dk-row:focus-visible .dk-row-go { opacity: 1; }
+
+/* Work rows: title + meta, then up to two status cells, then one quiet action.
+   The list measures itself, so the rows stack in any narrow card, inside the dashboard grid or not. */
+.dk-worklist { list-style: none; margin: 0; padding: 0; container: dkwork / inline-size; }
+.dk-work { display: grid; grid-template-columns: minmax(0, 1fr) 150px 124px auto; align-items: center; gap: 12px; padding: 10px var(--dk-pad); border-top: 1px solid var(--dk-border); }
+.dk-work:first-child { border-top: 0; }
+.dk-work-main { min-width: 0; }
+.dk-work-main b, .dk-work-main span { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dk-work-main b { font-size: 13.5px; line-height: 19px; font-weight: 600; }
+.dk-work-main span { font-size: var(--dk-fs-meta); line-height: var(--dk-lh-meta); color: var(--dk-text-3); font-variant-numeric: tabular-nums; }
+
+@container dkwork (max-width: 560px) {
+  .dk-work { grid-template-columns: minmax(0, 1fr) auto; row-gap: 6px; }
+  .dk-work-main { grid-column: 1 / -1; }
+  .dk-work .dk-btn { grid-row: 2; grid-column: 2; }
+  .dk-work .dk-stage { display: none; }
+}
+
+/* Activity: who did what to which record, and when. */
+.dk-acts { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+.dk-act { display: flex; align-items: flex-start; gap: 10px; }
+.dk-act-main { min-width: 0; }
+.dk-act-main p { margin: 0; font-size: var(--dk-fs-small); line-height: 19px; color: var(--dk-text-2); }
+.dk-act-main b { font-weight: 600; color: var(--dk-text); }
+.dk-act-meta { display: flex; align-items: center; gap: 6px; margin-top: 1px; font-size: var(--dk-fs-meta); line-height: var(--dk-lh-meta); color: var(--dk-text-3); }
+.dk-act-ref { padding: 0; border: 0; background: none; font: inherit; font-weight: 500; font-variant-numeric: tabular-nums; color: var(--dk-text-2); text-decoration: none; cursor: pointer; }
+.dk-act-ref:hover { color: var(--dk-accent); text-decoration: underline; }
+
+.dk-empty { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 36px 20px; text-align: center; font-size: var(--dk-fs-small); line-height: 19px; color: var(--dk-text-3); }
+.dk-empty > .dk-icon { width: 22px; height: 22px; margin-bottom: 6px; }
+.dk-empty b { font-size: 14px; font-weight: 600; color: var(--dk-text); }
+.dk-empty .dk-btn { margin-top: 10px; }
+
+/* ============================================================== 9. Layout */
+/* .dk-dash-wrap measures the page; .dk-dash is a 12-column grid. Give each card a span with .dk-span-N.
+ * Below 1040px of page width the spans regroup, below 720px everything stacks. */
+.dk-dash-wrap { container: dkdash / inline-size; }
+.dk-dash { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--dk-gap); }
+.dk-kpis { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--dk-gap); }
+.dk-span-3 { grid-column: span 3; }
+.dk-span-4 { grid-column: span 4; }
+.dk-span-5 { grid-column: span 5; }
+.dk-span-6 { grid-column: span 6; }
+.dk-span-7 { grid-column: span 7; }
+.dk-span-8 { grid-column: span 8; }
+.dk-span-12 { grid-column: 1 / -1; }
+
+@container dkdash (max-width: 1040px) {
+  .dk-span-5, .dk-span-6, .dk-span-7, .dk-span-8 { grid-column: 1 / -1; }
+  .dk-span-4 { grid-column: span 7; }
+  .dk-span-3 { grid-column: span 5; }
+  .dk-cols { max-width: 620px; }
+}
+@container dkdash (max-width: 860px) {
+  .dk-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@container dkdash (max-width: 720px) {
+  .dk-span-3, .dk-span-4 { grid-column: 1 / -1; }
+}
+@container dkdash (max-width: 400px) {
+  .dk-kpis { grid-template-columns: minmax(0, 1fr); }
+}

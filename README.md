@@ -38,8 +38,9 @@ The visible V1 sidebar is intentionally limited to **Dashboard · Document Contr
 
 ### How the V1 pages are built
 
-- `assets/mini-v1.js` / `assets/mini-v1.css`: the product shell. Navigation, terminology, appearance, the New / Revise / Submit dialogs, and the token layer (radius, surfaces, shadows, lifecycle colours, dark theme).
-- `assets/mini-workspace.js` / `assets/mini-workspace.css`: Dashboard, Tasks and Team. They extend the existing `Q.ui` kit and read one derived model, `Q.tasks()`, built from `Q.S.workflows` and unsubmitted drafts in `Q.S.documents`. Dashboard counts, the board, the list, team workload and the sidebar badge all come from it.
+- `assets/mini-v1.js` / `assets/mini-v1.css`: the product shell. Navigation, terminology, appearance, the New / Revise / Submit dialogs, and the mapping between the prototype's token names and the kit's tokens.
+- `kit/`: the **Dashboard Kit**. Design tokens (light and dark) and the components the Dashboard is built from, as three self-contained files (`kit.css`, `kit.js`, `icons.js`) plus a reference page at `/kit/`. See `kit/README.md`. Use it to build further pages in the same design.
+- `assets/mini-workspace.js` / `assets/mini-workspace.css`: Dashboard, Tasks and Team. All three read one derived model, `Q.tasks()`, built from `Q.S.workflows` and unsubmitted drafts in `Q.S.documents`, so Dashboard counts, the board, the list, team workload and the sidebar badge all come from it. The Dashboard is rendered from the kit; Tasks and Team still use the prototype's `Q.ui` kit.
 - The board is deliberately **not** drag-and-drop. A revision changes stage only through the review page actions (Complete Technical Review, Request Changes, Resubmit, Approve, Publish), each of which checks who is acting and writes to the audit trail.
 - **Document Control Health** is the average of four counted checks (periodic reviews on time, tasks within due date, source links available, document details complete). It is an internal indicator, not an ISO certification or compliance score.
 
@@ -47,7 +48,7 @@ The visible V1 sidebar is intentionally limited to **Dashboard · Document Contr
 
 ```bash
 node scripts/serve.cjs &          # http://localhost:4173
-bash scripts/smoke.sh             # renders the V1 routes in headless Chrome, light and dark
+bash scripts/smoke.sh             # renders the V1 routes and the kit reference in headless Chrome, light and dark
 ```
 
 The same checks run in GitHub Actions (`.github/workflows/v1-check.yml`). Screenshots of the V1 pages are in `screenshots/v1/`.

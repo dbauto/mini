@@ -15,6 +15,7 @@ on:
       - "assets/account.js"
       - "vendor/lucide.min.js"
       - "scripts/smoke.sh"
+      - "kit/**"
       - ".github/workflows/v1-check.yml"
   pull_request:
     paths:
@@ -29,6 +30,7 @@ on:
       - "assets/account.js"
       - "vendor/lucide.min.js"
       - "scripts/smoke.sh"
+      - "kit/**"
       - ".github/workflows/v1-check.yml"
 
 permissions:
@@ -47,12 +49,22 @@ jobs:
           node --check assets/core.js
           node --check assets/shell.js
           node --check assets/account.js
+          node --check kit/kit.js
+          node --check kit/icons.js
+          node --check kit/reference.js
       - name: V1 assets are loaded
         run: |
           grep -q 'assets/mini-v1.css' index.html
           grep -q 'assets/mini-v1.js' index.html
           grep -q 'assets/mini-workspace.css' index.html
           grep -q 'assets/mini-workspace.js' index.html
+          grep -q 'kit/kit.css' index.html
+          grep -q 'kit/kit.js' index.html
+      - name: Kit icons are up to date
+        run: |
+          cp kit/icons.js /tmp/kit-icons.js
+          node scripts/kit-icons.cjs
+          diff -q /tmp/kit-icons.js kit/icons.js
 
       - name: Browser smoke test (light and dark)
         run: |

@@ -5,10 +5,11 @@
  * Q.tasks() turns that state into one record per revision in progress; the Dashboard counts, the Tasks
  * board, the Tasks list, the Team workload and the sidebar badge all read Q.tasks(), so they cannot disagree.
  *
- * Components extend the existing kit (Q.ui, `ui-` classes in app.css) instead of starting a second one:
- *   reused ...... UI.card (Panel), UI.badge, UI.info, UI.list / UI.row, Q.seg, Q.table, .btn, .avatar, .empty
- *   added here .. UI.pageHeader, UI.metric, UI.stage, UI.avatars, UI.due2, UI.emptyState, UI.activity,
- *                 UI.columns, UI.gauge, UI.meter, UI.taskCard, UI.memberCard
+ * Components
+ *   Dashboard ....... built entirely from the dashboard kit (kit/kit.js, global `DK`, classes `dk-`).
+ *                     This file only prepares the data and hands it to DK.
+ *   Tasks and Team .. use the prototype kit (Q.ui, classes `ui-`) plus a few local parts defined below:
+ *                     UI.pageHeader, UI.avatar(s), UI.stage, UI.due2, UI.emptyState, UI.taskCard, UI.memberCard.
  */
 (() => {
   'use strict';
@@ -54,7 +55,7 @@
   const openAttrs = t => t.w ? `href="#/review/${esc(t.w.id)}"` : `href="#/documents" data-action="open-doc" data-id="${esc(t.d.id)}"`;
 
   /* =========================================================================================
-   * Kit extensions
+   * Local parts for Tasks and Team
    * ========================================================================================= */
   const shortDate = d => Q.S.settings?.regional?.dateFormat && Q.S.settings.regional.dateFormat !== 'd MMM yyyy' ? Q.fmt(d) : Q.fmt(d).replace(/ \d{4}$/, '');
   const shortName = id => { const [first, ...rest] = Q.pname(id).split(' '); return rest.length ? `${first} ${rest[rest.length - 1][0]}.` : first; };
@@ -79,39 +80,9 @@
     return `<span class="ui-due">Due ${shortDate(t.due)}</span>`;
   };
 
-  // MetricCard: label, one number, one short note. `feature` marks the single emphasised card.
-  UI.metric = o => `<a class="ui-stat ui-metric${o.feature ? ' feature' : ''}" href="${esc(o.href)}" aria-label="${esc(`${o.label}: ${o.value}. ${o.note || ''}`)}">
-      <span class="ui-stat-head"><span class="ui-stat-label">${esc(o.label)}</span><span class="ui-metric-go" aria-hidden="true">${icon('arrow-up-right')}</span></span>
-      <span class="ui-stat-body"><span class="ui-stat-value tnum">${esc(String(o.value))}</span></span>
-      <span class="ui-stat-foot">${o.flag ? `<span class="ui-metric-flag">${icon('clock-alert')}${esc(o.flag)}</span>` : `<span class="ui-stat-note">${esc(o.note || '')}</span>`}</span></a>`;
-
   // EmptyState: an icon, one line of what is (not) here and, optionally, the next step.
   UI.emptyState = ({ icon: ic = 'inbox', title, text = '', action = '' }) =>
     `<div class="ui-emptystate">${icon(ic)}<b>${esc(title)}</b>${text ? `<span>${esc(text)}</span>` : ''}${action}</div>`;
-
-  // Thin meter: value against a limit on a same-hue track.
-  UI.meter = (pct, tone = '') => `<span class="ui-meter${tone ? ' ' + tone : ''}" aria-hidden="true"><i style="--v:${Math.max(0, Math.min(100, pct))}%"></i></span>`;
-
-  // Column chart with one clickable column per item: { label, value, href, stage }.
-  UI.columns = (items, label) => {
-    const max = Math.max(1, ...items.map(i => i.value));
-    return `<ol class="ui-cols" aria-label="${esc(label)}">${items.map(i => `<li><a class="ui-col" href="${esc(i.href)}" title="${esc(`${i.label}: ${plural(i.value, 'document')}`)}">
-        <span class="ui-col-plot"><span class="ui-col-v tnum">${i.value}</span><span class="ui-col-bar" data-stage="${esc(i.stage)}" style="--h:${(i.value / max * 100).toFixed(1)}%"></span></span>
-        <span class="ui-col-l">${esc(i.label)}<span class="sr-only">: ${plural(i.value, 'document')}</span></span></a></li>`).join('')}</ol>`;
-  };
-
-  // Half-ring gauge for one ratio. The number is the message; the arc is context.
-  UI.gauge = (pct, { label, tone = 'neutral', state = '' }) => {
-    const v = pct == null ? 0 : Math.max(0, Math.min(100, pct)), r = 70, len = Math.PI * r;
-    return `<div class="ui-gauge" role="img" aria-label="${esc(label)}: ${pct == null ? 'not enough data' : v + ' percent'}${state ? ', ' + esc(state) : ''}">
-      <svg viewBox="0 0 160 88" aria-hidden="true"><path class="trk" d="M10 80a70 70 0 0 1 140 0"/>${v ? `<path class="val ${tone}" d="M10 80a70 70 0 0 1 140 0" stroke-dasharray="${(len * v / 100).toFixed(1)} ${len.toFixed(1)}"/>` : ''}</svg>
-      <span class="ui-gauge-c"><b class="tnum">${pct == null ? '—' : v + '%'}</b>${state ? `<span class="ui-gauge-state ${tone}">${esc(state)}</span>` : ''}</span></div>`;
-  };
-
-  // ActivityItem: who did what to which document, and when.
-  const relDate = d => { const n = Q.days(d, Q.today()); return n === 0 ? 'Today' : n === 1 ? 'Yesterday' : Q.fmt(d); };
-  UI.activity = a => `<li class="ui-act">${UI.avatar(a.who, 'sm')}<div class="ui-act-main"><p><b>${esc(Q.pname(a.who))}</b> ${esc(a.text)}</p>
-      <span class="ui-act-meta"><button class="link-btn tnum" type="button" data-action="open-doc" data-id="${esc(a.ref)}" aria-label="Open ${esc(a.ref)}">${esc(a.ref)}</button><span aria-hidden="true">·</span><time datetime="${esc(a.date)}">${esc(relDate(a.date))}</time></span></div></li>`;
 
   // TaskCard (board): title, code + revision, process, who has the next action, due state, comment count.
   UI.taskCard = t => {
@@ -161,6 +132,11 @@
     return { pct, tone, state: { success: 'On track', warning: 'Needs attention', danger: 'At risk', neutral: 'Not enough data' }[tone], factors };
   };
 
+  // Kit options for one task: where it opens and how its due date reads.
+  const openTarget = t => t.w ? { href: `#/review/${t.w.id}` } : { href: '#/documents', attrs: { 'data-action': 'open-doc', 'data-id': t.d.id } };
+  const dueLabel = t => !t.due ? 'No due date' : t.state === 'overdue' ? `Overdue · ${shortDate(t.due)}` : Q.days(Q.today(), t.due) === 0 ? 'Due today' : `Due ${shortDate(t.due)}`;
+  const relDate = d => { const n = Q.days(d, Q.today()); return n === 0 ? 'Today' : n === 1 ? 'Yesterday' : Q.fmt(d); };
+
   Q.views.overview = () => {
     const docs = Q.S.documents, tasks = Q.tasks();
     const stage = k => tasks.filter(t => t.stage === k);
@@ -169,7 +145,7 @@
     const flag = k => overdueIn(k) ? `${overdueIn(k)} overdue` : '';
 
     /* ---- KPI cards ---- */
-    const metrics = [
+    const kpis = [
       { label: 'Controlled documents', value: docs.length, note: `${published} published · ${tasks.length} in progress`, href: '#/documents', feature: true },
       { label: 'Technical Review', value: stage('review').length, note: 'Awaiting technical review', flag: flag('review'), href: '#/tasks?stage=review' },
       { label: 'Awaiting Approval', value: stage('approval').length, note: 'Pending approval', flag: flag('approval'), href: '#/tasks?stage=approval' },
@@ -177,72 +153,71 @@
     ];
 
     /* ---- Document Workflow: revisions in progress per stage, plus the published share ---- */
-    const pubPct = docs.length ? Math.round(published / docs.length * 100) : 0;
-    const workflow = UI.card({
-      title: 'Document Workflow', cls: 'dash-wf', link: { href: '#/tasks', text: 'Open Tasks' },
+    const workflow = DK.card({
+      title: 'Document Workflow', span: 5, link: { href: '#/tasks', text: 'Open Tasks' },
       info: 'Each document is counted once, by the stage of its current revision. Columns show revisions in progress; the bar below shows documents whose published revision has no change in progress.',
-      body: `<p class="dash-lead"><b class="tnum">${tasks.length}</b> ${tasks.length === 1 ? 'revision' : 'revisions'} in progress</p>
-        ${UI.columns(Q.STAGES.map(s => ({ label: s.label, value: stage(s.key).length, href: `#/tasks?stage=${s.key}`, stage: s.key })), 'Revisions in progress by lifecycle stage')}
-        <a class="dash-pub" href="#/documents?status=published" title="Open published documents">
-          ${UI.stage('published')}${UI.meter(pubPct)}<span class="dash-pub-v tnum"><b>${published}</b> of ${docs.length}</span></a>`
+      body: DK.lead(tasks.length, tasks.length === 1 ? 'revision in progress' : 'revisions in progress')
+        + DK.columns({ label: 'Revisions in progress by lifecycle stage', unit: ['document', 'documents'],
+          items: Q.STAGES.map(s => ({ label: s.label, value: stage(s.key).length, href: `#/tasks?stage=${s.key}`, stage: s.key })) })
+        + DK.strip({ label: DK.stage('published'), value: docs.length ? published / docs.length * 100 : 0, tone: 'published',
+          figure: `<b>${published}</b> of ${docs.length}`, href: '#/documents?status=published', title: 'Open published documents' })
     });
 
     /* ---- Needs Attention: only rows with something to do, most urgent first ---- */
     const overdue = tasks.filter(t => t.state === 'overdue'), soon = tasks.filter(t => t.state === 'soon');
     const periodic = docs.filter(Q.docOverdue).sort((a, b) => a.nextReview.localeCompare(b.nextReview));
     const attention = [
-      overdue.length && { tone: 'danger', icon: 'clock-alert', href: '#/tasks?show=overdue', n: overdue.length,
+      overdue.length && { tone: 'danger', icon: 'clock-alert', href: '#/tasks?show=overdue',
         title: `${plural(overdue.length, 'task')} past ${overdue.length === 1 ? 'its' : 'their'} due date`, meta: `Oldest was due ${Q.fmt(overdue[0].due)}` },
-      periodic.length && { tone: 'danger', icon: 'calendar-clock', href: '#/documents?status=overdue', n: periodic.length,
+      periodic.length && { tone: 'danger', icon: 'calendar-clock', href: '#/documents?status=overdue',
         title: `${plural(periodic.length, 'document')} overdue for periodic review`, meta: `Oldest was due ${Q.fmt(periodic[0].nextReview)}` },
-      soon.length && { tone: 'warning', icon: 'clock', href: '#/tasks?show=soon', n: soon.length,
+      soon.length && { tone: 'warning', icon: 'clock', href: '#/tasks?show=soon',
         title: `${plural(soon.length, 'task')} due within ${DUE_SOON_DAYS} days`, meta: `Next: ${soon[0].d.title}` },
-      stage('changes').length && { tone: 'warning', icon: 'reply', href: '#/tasks?stage=changes', n: stage('changes').length,
+      stage('changes').length && { tone: 'warning', icon: 'reply', href: '#/tasks?stage=changes',
         title: `${plural(stage('changes').length, 'revision')} waiting on ${stage('changes').length === 1 ? 'its author' : 'authors'}`, meta: 'Changes requested during review' },
-      stage('publish').length && { icon: 'send', href: '#/tasks?stage=publish', n: stage('publish').length,
+      stage('publish').length && { icon: 'send', href: '#/tasks?stage=publish',
         title: `${plural(stage('publish').length, 'approved revision')} ready to publish`, meta: 'Not effective until published' },
-      stage('draft').length && { icon: 'pencil', href: '#/tasks?stage=draft', n: stage('draft').length,
+      stage('draft').length && { icon: 'pencil', href: '#/tasks?stage=draft',
         title: `${plural(stage('draft').length, 'draft')} not yet submitted`, meta: 'Submit for Technical Review when ready' }
     ].filter(Boolean).slice(0, 5);
-    const needs = UI.card({
-      title: 'Needs Attention', cls: 'dash-attn', count: attention.length || null, flush: true,
-      body: UI.list(attention.map(a => ({ href: a.href, icon: a.icon, tone: a.tone, title: a.title, meta: a.meta })), { empty: 'Nothing needs attention right now.' })
+    const needs = DK.card({
+      title: 'Needs Attention', span: 4, count: attention.length || null, flush: true,
+      body: DK.list({ items: attention, empty: { icon: 'circle-check', title: 'Nothing needs attention right now' } })
     });
 
     /* ---- Document Control Health ---- */
     const h = Q.docControlHealth(tasks);
-    const health = UI.card({
-      title: 'Document Control Health', cls: 'dash-health', info: HEALTH_NOTE,
-      body: `${UI.gauge(h.pct, { label: 'Document Control Health', tone: h.tone, state: h.state })}
-        <ul class="dash-factors">${h.factors.map(f => `<li><span class="dash-factor-l">${esc(f.label)}</span><span class="dash-factor-v tnum">${f.of ? `${f.ok} of ${f.of}` : '—'}</span>${UI.meter(f.pct ?? 0, f.pct == null ? '' : f.pct >= 85 ? '' : f.pct >= 70 ? 'warning' : 'danger')}</li>`).join('')}</ul>`
+    const health = DK.card({
+      title: 'Document Control Health', span: 3, info: HEALTH_NOTE, infoLeft: true,
+      body: DK.gauge({ value: h.pct, label: 'Document Control Health', tone: h.tone, state: h.state }) + DK.factors(h.factors)
     });
 
     /* ---- My Work ---- */
     const mine = tasks.filter(t => t.mine);
-    const myWork = UI.card({
-      title: 'My Work', cls: 'dash-work', count: mine.length || null, flush: true, link: mine.length ? { href: '#/tasks?show=mine', text: 'View all' } : null,
-      body: mine.length ? `<ul class="ui-worklist">${mine.slice(0, 5).map(t => `<li class="ui-work">
-          <div class="ui-work-main"><b title="${esc(t.d.title)}">${esc(t.d.title)}</b><span class="tnum">${esc(t.d.id)} · Rev ${esc(t.rev)} · ${esc(t.role)}</span></div>
-          ${UI.stage(t.stage)}${UI.due2(t)}
-          <a class="btn sm" ${openAttrs(t)} aria-label="Open ${esc(t.d.title)}">Open</a></li>`).join('')}</ul>`
-        : UI.emptyState({ icon: 'circle-check', title: 'No document actions are assigned to you', text: 'Reviews, approvals and drafts that need you appear here.' })
+    const myWork = DK.card({
+      title: 'My Work', span: 7, count: mine.length || null, flush: true, link: mine.length ? { href: '#/tasks?show=mine', text: 'View all' } : null,
+      body: DK.workList({
+        items: mine.slice(0, 5).map(t => ({ title: t.d.title, meta: `${t.d.id} · Rev ${t.rev} · ${t.role}`,
+          cells: [DK.stage(t.stage), DK.due({ label: dueLabel(t), state: t.state })], action: { label: 'Open', ...openTarget(t) } })),
+        empty: { icon: 'circle-check', title: 'No document actions are assigned to you', text: 'Reviews, approvals and drafts that need you appear here.' }
+      })
     });
 
     /* ---- Recent Activity ---- */
-    const recent = Q.S.activity.filter(a => a.ref && Q.doc(a.ref)).slice(0, 5);
-    const activity = UI.card({
-      title: 'Recent Activity', cls: 'dash-activity',
-      body: recent.length ? `<ul class="ui-acts">${recent.map(UI.activity).join('')}</ul>` : UI.emptyState({ icon: 'history', title: 'No document activity yet' })
+    const activity = DK.card({
+      title: 'Recent Activity', span: 5,
+      body: DK.activity({
+        items: Q.S.activity.filter(a => a.ref && Q.doc(a.ref)).slice(0, 5).map(a => ({ initials: Q.initials(a.who), name: Q.pname(a.who), text: a.text, date: a.date, when: relDate(a.date),
+          ref: { label: a.ref, attrs: { 'data-action': 'open-doc', 'data-id': a.ref, 'aria-label': `Open ${a.ref}` } } })),
+        empty: { icon: 'history', title: 'No document activity yet' }
+      })
     });
 
-    const html = UI.pageHeader({
+    const html = DK.pageHeader({
       title: 'Dashboard', sub: 'Document control activity and items requiring attention.',
-      actions: `<button class="btn" type="button" data-action="export-tasks" title="Download the revisions in progress as a CSV file">${icon('download')}Export</button>
-        <button class="btn primary" type="button" data-action="connect-doc">${icon('file-plus')}New / Revise Document</button>`
-    }) + `<div class="dash-wrap"><div class="dash">
-        <div class="dash-kpis">${metrics.map(UI.metric).join('')}</div>
-        ${workflow}${needs}${health}${myWork}${activity}
-      </div></div>`;
+      actions: DK.button({ label: 'Export', icon: 'download', title: 'Download the revisions in progress as a CSV file', attrs: { 'data-action': 'export-tasks' } })
+        + DK.button({ label: 'New / Revise Document', icon: 'file-plus', variant: 'primary', attrs: { 'data-action': 'connect-doc' } })
+    }) + DK.dash({ kpis, body: workflow + needs + health + myWork + activity });
     return { title: 'Dashboard', nav: 'overview', html };
   };
 

@@ -3,61 +3,59 @@
  * app.css is the full prototype stylesheet and stays untouched. This file is the single place where
  * the Mini product decides how that system looks:
  *
- *   1. Tokens ........ spacing / radius / surface / shadow values, light theme
+ *   1. Tokens ........ mapping between the prototype's token names and the dashboard kit's
  *   2. Shell ......... sidebar, top bar, page canvas
  *   3. Shared ........ panels, buttons, tables: one radius scale, one border, one flat shadow
  *   4. V1 pieces ..... New / Revise chooser, appearance settings
- *   5. Dark theme .... tokens first, then the few surfaces that cannot follow tokens alone
+ *   5. Dark theme .... the few surfaces that cannot follow tokens alone
  *
- * Page-level components (Dashboard, Tasks, Team) live in mini-workspace.css and only consume
- * the tokens defined here. Selectors use html[data-ui] so they outrank the prototype's
- * html[data-ui="material"] rules at equal specificity without !important.
+ * The Dashboard is built from the kit's components (kit/kit.js). Tasks and Team live in
+ * mini-workspace.css and consume the same tokens. Selectors here use html[data-ui] so they outrank
+ * the prototype's html[data-ui="material"] rules at equal specificity without !important.
  */
 
 /* ============================================================== 1. Tokens */
+/* The design tokens live in the dashboard kit (kit/kit.css), light and dark. This block only connects
+ * the two vocabularies: the prototype's token names point at the kit's values, so every existing page
+ * picks them up, and the kit receives the organization's brand colours, which Settings → Branding
+ * sets at run time. Change a colour, radius or shadow in the kit, not here. */
 :root, html[data-ui] {
-  /* Canvas and surfaces: neutral, slightly warm-green so the forest accent sits naturally. */
-  --bg: #F4F6F5;
-  --surface: #FFFFFF;
-  --surface-2: #F7F9F8;
-  --border: #E3E8E5;
-  --border-strong: #CDD5D1;
-  --text-3: #5F6B65;                /* metadata text: 5:1 on the canvas (the prototype value was 4.3:1) */
+  --bg: var(--dk-bg);
+  --surface: var(--dk-surface);
+  --surface-2: var(--dk-surface-2);
+  --border: var(--dk-border);
+  --border-strong: var(--dk-border-strong);
+  --text: var(--dk-text);
+  --text-2: var(--dk-text-2);
+  --text-3: var(--dk-text-3);
+  --hover: var(--dk-hover);
+  --muted-bg: var(--dk-neutral-bg);
+  --success: var(--dk-success);  --success-bg: var(--dk-success-bg);
+  --warning: var(--dk-warning);  --warning-bg: var(--dk-warning-bg);
+  --danger: var(--dk-danger);    --danger-bg: var(--dk-danger-bg);
+  --info: var(--dk-info);        --info-bg: var(--dk-info-bg);
 
-  /* One radius scale: controls 8px, cards 12px. */
-  --r-sm: 6px;
-  --r-md: 8px;
-  --r-lg: 12px;
-
-  /* One elevation for cards (almost flat); floating layers keep the prototype's shadow tokens. */
-  --shadow-card: 0 1px 2px rgba(16, 40, 30, .05);
+  --r-sm: var(--dk-r-sm);
+  --r-md: var(--dk-r-md);
+  --r-lg: var(--dk-r-lg);
+  --shadow-card: var(--dk-shadow-card);
+  --shadow-float: var(--dk-shadow-float);
+  --focus: var(--dk-focus);
   --m-shadow: var(--shadow-card);
   --m-gap: 0px;                     /* sidebar sits flush instead of floating */
 
-  /* Typography: compact enterprise scale. */
-  --fs-page: 24px;  --lh-page: 30px;
-  --fs-section: 16px; --lh-section: 24px;
-
-  /* Shell */
-  --sb-expanded: 224px;
-  --gap: 16px;                      /* grid gap between cards */
-
-  /* Featured (dark forest) surface, used by one card per page at most. */
-  --feature-bg: var(--sb-bg);
-  --feature-border: var(--sb-bg);
-  --feature-ink: #FFFFFF;
-  --feature-muted: rgba(255, 255, 255, .72);
-  --feature-chip: rgba(255, 255, 255, .12);
-
-  /* Lifecycle ramp: one green getting deeper towards publication. Draft is neutral and drawn hollow
-     (not in the workflow yet); amber is reserved for the one stage that needs someone's attention. */
-  --stage-draft: #97A39D;
-  --stage-review: color-mix(in srgb, var(--accent) 40%, #FFFFFF);
-  --stage-approval: color-mix(in srgb, var(--accent) 72%, #FFFFFF);
-  --stage-publish: var(--accent);
-  --stage-changes: #D9992B;
-  --stage-published: color-mix(in srgb, var(--accent) 72%, #000000);
-  --track: #E9EDEB;                 /* unfilled part of meters and gauges */
+  --fs-page: var(--dk-fs-page);        --lh-page: var(--dk-lh-page);
+  --fs-section: var(--dk-fs-section);  --lh-section: var(--dk-lh-section);
+  --sb-expanded: var(--dk-sidebar-w);
+  --gap: var(--dk-gap);
+}
+/* Brand colours flow the other way: host → kit. Listed for both themes so they outrank the kit's own dark values. */
+:root, :root[data-color-mode="dark"] {
+  --dk-accent: var(--accent);
+  --dk-accent-hover: var(--accent-hover);
+  --dk-accent-soft: var(--accent-soft);
+  --dk-sidebar-bg: var(--sb-bg);
+  --dk-brand-mark: var(--org-mark, #1C6A4A);
 }
 
 /* ============================================================== 2. Shell */
@@ -92,7 +90,7 @@ html[data-ui] .sb .sb-item .count { min-width: 20px; height: 18px; padding: 0 6p
 
 /* ---- Top bar: search, appearance, notifications, account. ---- */
 html[data-ui] .topbar { background: var(--surface); backdrop-filter: none; border-bottom: 1px solid var(--border); }
-html[data-ui] .search { flex-basis: 420px; }
+@media (min-width: 721px) { html[data-ui] .search { flex-basis: 420px; } }   /* below that the prototype collapses search to an icon */
 html[data-ui] .search-box { background: var(--surface-2); border-color: var(--border); border-radius: var(--r-md); }
 html[data-ui] .search-box:focus-within { background: var(--surface); border-color: var(--accent); }
 .topbar .pop-wrap:has(#helpBtn) { display: none; }   /* shortcuts and About stay in the account menu */
@@ -171,44 +169,16 @@ html[data-ui] .pop, html[data-ui] .menu { border: 1px solid var(--border); borde
 @media (max-width: 720px) { .appearance-grid { grid-template-columns: 1fr; } }
 
 /* ============================================================== 5. Dark theme */
-/* Deep charcoal-green canvas, slightly lighter surfaces, soft green accent. The accent, sidebar and
- * org-mark colours are derived from the organization's brand palette in mini-v1.js. */
+/* The dark values themselves are in kit/kit.css. The accent, sidebar and org-mark colours are derived
+ * from the organization's brand palette in mini-v1.js. */
 html[data-color-mode="dark"] {
   color-scheme: dark;
-  --bg: #0E1412;
-  --surface: #151C19;
-  --surface-2: #1A2320;
-  --border: #27322D;
-  --border-strong: #3A4741;
-  --text: #E9F0EC;
-  --text-2: #BFCCC5;
-  --text-3: #8D9C95;
-  --success: #67D193;  --success-bg: #153525;
-  --info: #7EB2F1;     --info-bg: #142B48;
-  --warning: #E7B75B;  --warning-bg: #3A2B10;
+  /* Everything else follows the kit's dark tokens through the mapping in section 1.
+     Only the prototype tokens the kit has no counterpart for are set here. */
   --orange: #F0A069;   --orange-bg: #402416;
-  --danger: #F2857E;   --danger-bg: #401D1B;
-  --muted: #A3AEA9;    --muted-bg: #232C28;
-  --hover: #1E2723;
+  --muted: #A3AEA9;
   --selected: #183928;
-  --focus: 0 0 0 2px #0E1412, 0 0 0 4px var(--accent);
-  --shadow-card: 0 1px 2px rgba(0, 0, 0, .3);
-  --shadow-float: 0 10px 30px rgba(0, 0, 0, .42), 0 2px 8px rgba(0, 0, 0, .26);
   --shadow-modal: 0 28px 80px rgba(0, 0, 0, .62);
-
-  --feature-bg: color-mix(in srgb, var(--accent) 15%, var(--surface));
-  --feature-border: color-mix(in srgb, var(--accent) 34%, var(--border));
-  --feature-ink: var(--text);
-  --feature-muted: var(--text-2);
-  --feature-chip: color-mix(in srgb, var(--accent) 18%, transparent);
-
-  --stage-draft: #6F7D76;
-  --stage-review: color-mix(in srgb, var(--accent) 40%, var(--surface));
-  --stage-approval: color-mix(in srgb, var(--accent) 68%, var(--surface));
-  --stage-publish: var(--accent);
-  --stage-changes: #E7B75B;
-  --stage-published: color-mix(in srgb, var(--accent) 80%, #FFFFFF);
-  --track: #26312C;
 }
 
 html[data-color-mode="dark"] body { background: var(--bg); color: var(--text); }
