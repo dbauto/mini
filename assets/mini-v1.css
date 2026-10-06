@@ -39,7 +39,7 @@
   --fs-section: 16px; --lh-section: 24px;
 
   /* Shell */
-  --sb-expanded: 224px;
+  --sb-expanded: 296px;
   --gap: 16px;                      /* grid gap between cards */
 
   /* Featured (dark forest) surface, used by one card per page at most. */
