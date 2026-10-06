@@ -5,6 +5,82 @@
 (() => {
   'use strict';
   const { esc, icon } = Q;
+
+  /* ---------- Appearance: Light / Dark / System ---------- */
+  const APPEARANCE_KEY = 'iqms.mini.appearance';
+  const appearancePref = () => {
+    try { return localStorage.getItem(APPEARANCE_KEY) || 'system'; } catch (_) { return 'system'; }
+  };
+  const resolvedAppearance = pref => pref === 'dark' || pref === 'light'
+    ? pref
+    : (window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+
+  Q.appearance = appearancePref;
+  Q.resolvedAppearance = () => resolvedAppearance(appearancePref());
+
+  const applyDarkBrandTokens = () => {
+    const mode = document.documentElement.dataset.colorMode;
+    if (mode !== 'dark') return;
+    const palette = Q.PALETTES?.[Q.S.settings?.branding?.palette] || Q.PALETTES?.forest;
+    if (!palette) return;
+    const st = document.documentElement.style;
+    st.setProperty('--accent', `color-mix(in srgb, ${palette.accent} 62%, white 38%)`);
+    st.setProperty('--accent-hover', `color-mix(in srgb, ${palette.accent} 52%, white 48%)`);
+    st.setProperty('--accent-soft', `color-mix(in srgb, ${palette.accent} 22%, #151c19)`);
+    st.setProperty('--sb-bg', `color-mix(in srgb, ${palette.sb} 74%, #07110d)`);
+    st.setProperty('--sb-bg-2', `color-mix(in srgb, ${palette.sb2} 76%, #050c09)`);
+    st.setProperty('--org-mark', `color-mix(in srgb, ${palette.mark} 72%, white 28%)`);
+  };
+
+  const baseApplyBranding = Q.applyBranding;
+  Q.applyBranding = () => {
+    baseApplyBranding?.();
+    applyDarkBrandTokens();
+  };
+
+  const syncAppearanceButton = () => {
+    const btn = document.getElementById('appearanceBtn');
+    if (!btn) return;
+    const dark = document.documentElement.dataset.colorMode === 'dark';
+    btn.innerHTML = icon(dark ? 'sun' : 'moon');
+    btn.setAttribute('aria-label', dark ? 'Switch to light theme' : 'Switch to dark theme');
+    btn.title = dark ? 'Light theme' : 'Dark theme';
+    btn.setAttribute('aria-pressed', String(dark));
+    Q.refreshIcons?.();
+  };
+
+  Q.setAppearance = (pref, { save = true, announce = true } = {}) => {
+    const clean = ['light', 'dark', 'system'].includes(pref) ? pref : 'system';
+    if (save) { try { localStorage.setItem(APPEARANCE_KEY, clean); } catch (_) {} }
+    const mode = resolvedAppearance(clean);
+    document.documentElement.dataset.colorMode = mode;
+    document.documentElement.style.colorScheme = mode;
+    document.documentElement.dataset.appearancePref = clean;
+    Q.applyBranding?.();
+    syncAppearanceButton();
+    if (announce) Q.toast?.(`${mode === 'dark' ? 'Dark' : 'Light'} theme applied`, clean === 'system' ? 'Following your device appearance.' : 'Saved for this browser.');
+  };
+
+  const addAppearanceButton = () => {
+    if (document.getElementById('appearanceBtn')) return;
+    const right = document.querySelector('.topbar-right');
+    const help = document.getElementById('helpBtn')?.closest('.pop-wrap');
+    if (!right) return;
+    const btn = document.createElement('button');
+    btn.className = 'icon-btn appearance-btn';
+    btn.id = 'appearanceBtn';
+    btn.type = 'button';
+    btn.addEventListener('click', () => Q.setAppearance(document.documentElement.dataset.colorMode === 'dark' ? 'light' : 'dark'));
+    right.insertBefore(btn, help || right.firstChild);
+    syncAppearanceButton();
+  };
+
+  Q.setAppearance(appearancePref(), { save: false, announce: false });
+  addAppearanceButton();
+  window.matchMedia?.('(prefers-color-scheme: dark)').addEventListener?.('change', () => {
+    if (appearancePref() === 'system') Q.setAppearance('system', { save: false, announce: false });
+  });
+
   const nav = document.getElementById('sbNav');
   const foot = document.getElementById('sbFoot');
 
@@ -457,6 +533,35 @@
     if (doc?.source?.url) window.open(doc.source.url, '_blank', 'noopener,noreferrer');
     else Q.toast(`Open in ${doc?.source?.system || 'Microsoft 365'}`, 'This sample record does not contain a live external URL.');
   };
+
+  /* Appearance preference is per browser/user, unlike organization branding. */
+  if (Q.settingsViews?.branding) {
+    const baseBrandingView = Q.settingsViews.branding;
+    Q.settingsViews.branding = () => {
+      const view = baseBrandingView();
+      const pref = appearancePref();
+      const choices = [
+        ['light', 'sun', 'Light', 'Bright surfaces for daytime use.'],
+        ['dark', 'moon', 'Dark', 'Low-glare dark surfaces while document previews stay paper-white.'],
+        ['system', 'monitor', 'System', 'Follow this device’s light or dark preference.']
+      ];
+      view.html += `<section class="panel section" id="appearanceSettings">
+        <div class="panel-head"><div><h3>Appearance</h3><span class="muted small">Personal display preference for this browser</span></div></div>
+        <div class="panel-pad"><div class="appearance-grid" role="radiogroup" aria-label="Appearance">
+          ${choices.map(([value, ic, label, hint]) => `<label class="appearance-opt"><input type="radio" name="appearance" value="${value}" ${pref === value ? 'checked' : ''}><span class="appearance-icon">${icon(ic)}</span><span><b>${label}</b><small>${hint}</small></span></label>`).join('')}
+        </div><p class="help" style="margin-top:10px">This does not change the organization’s brand palette or the controlled-document content.</p></div>
+      </section>`;
+      const after = view.after;
+      view.after = main => {
+        after?.(main);
+        main.querySelectorAll('[name="appearance"]').forEach(r => r.addEventListener('change', () => {
+          Q.setAppearance(r.value);
+          main.querySelectorAll('[name="appearance"]').forEach(x => x.checked = x.value === r.value);
+        }));
+      };
+      return view;
+    };
+  }
 
   /* Small product text cleanup. */
   const search = document.getElementById('searchInput');
