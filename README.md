@@ -1,3 +1,32 @@
+# iQMS Mini — V1 Document Management Core
+
+This repository is the **document-management-first** client version. It was split from the broader QMS prototype so the first approval cycle can focus on the core service before custom modules are added.
+
+## V1 scope
+
+- Controlled document library
+- **Create New Document** or **Revise Existing Document**
+- Microsoft 365 document links (SharePoint / OneDrive); the QMS stores workflow metadata rather than requiring file uploads
+- Revision history and one active working revision per document
+- **Technical Review** assigned to Document Control
+- Changes requested / resubmission loop
+- Approval
+- Final **Publish**
+- Documents in Review work queue
+- Comments and activity / audit trail
+- Process / area assignment and ISO clause context
+- User/access and workspace settings
+
+The visible V1 sidebar is intentionally limited to **Overview, Document Control, Documents in Review, ISO QMS Structure, and Settings**. Risk, audit, survey, KPI and other broader modules remain in the underlying prototype only as future/customization work and are not part of the V1 navigation.
+
+### Controlled lifecycle
+
+`Draft → Technical Review → Changes Requested (when needed) → Approval → Ready to Publish → Published`
+
+The currently published revision remains the controlled version until the replacement revision is published.
+
+---
+
 # iQMS v3: client menu update
 
 This is a copy of `QMS-v2-process-centric`, reworked around the client's feedback on navigation. The v2 folder was not modified, and nothing was committed or pushed.
