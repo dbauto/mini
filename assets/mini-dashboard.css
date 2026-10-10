@@ -43,11 +43,11 @@ html[data-ui] .ui-metric.feature { background: var(--feature-bg); border-color: 
 .ui-meter.danger i { background: var(--danger); }
 
 /* Column chart: thin columns on one baseline, value on the cap, label underneath. Each column is a link. */
-.ui-cols { list-style: none; margin: 0; padding: 0; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 4px; }
-.ui-col { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 6px 2px 8px; border-radius: var(--r-md); color: inherit; text-decoration: none; }
+.ui-cols { list-style: none; margin: 0; padding: 0; width: 100%; display: flex; align-items: stretch; justify-content: center; gap: 4px; }
+.ui-col { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 8px; padding: 6px 2px 8px; border-radius: var(--r-md); color: inherit; text-decoration: none; }
 .ui-col:hover { background: var(--hover); text-decoration: none; }
 .ui-col:focus-visible { outline: none; box-shadow: var(--focus); border-radius: var(--r-md); }
-.ui-col-plot { width: 100%; height: 128px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px; border-bottom: 1px solid var(--border-strong); }
+.ui-col-plot { width: 100%; height: 128px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px; border-bottom: 1px solid var(--border-strong); text-align: center; }
 .ui-col-v { font-size: 13px; line-height: 16px; font-weight: 600; color: var(--text); }
 .ui-col-bar { width: 26px; height: calc(var(--h, 0%) * .8); min-height: 3px; border-radius: 5px 5px 0 0; background: var(--stage, var(--accent)); }
 .ui-col-bar[data-stage="draft"] { background: repeating-linear-gradient(-45deg, var(--stage-draft) 0 1.5px, transparent 1.5px 6px); box-shadow: inset 0 1.5px 0 var(--stage-draft), inset 1.5px 0 0 var(--stage-draft), inset -1.5px 0 0 var(--stage-draft); }
