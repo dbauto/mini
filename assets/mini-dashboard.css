@@ -1,3 +1,21 @@
+/* Main iQMS compatibility tokens.
+ * This branch keeps the full/main application shell and only adapts the Mini dashboard. */
+:root {
+  --feature-bg: var(--sb-bg);
+  --feature-border: var(--sb-bg);
+  --feature-ink: #FFFFFF;
+  --feature-muted: rgba(255,255,255,.72);
+  --feature-chip: rgba(255,255,255,.12);
+  --stage-draft: #97A39D;
+  --stage-review: color-mix(in srgb, var(--accent) 40%, #FFFFFF);
+  --stage-approval: color-mix(in srgb, var(--accent) 72%, #FFFFFF);
+  --stage-publish: var(--accent);
+  --stage-changes: #D9992B;
+  --stage-published: color-mix(in srgb, var(--accent) 72%, #000000);
+  --track: #E9EDEB;
+}
+.page-sub { margin:4px 0 0; max-width:720px; color:var(--text-2); font-size:13px; line-height:20px; }
+
 /* iQMS Mini V1 — Dashboard.
  *
  * Extends the existing `ui-` kit (UI.card, UI.list, UI.info, .btn, .avatar) and consumes only tokens
