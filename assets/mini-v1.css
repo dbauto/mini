@@ -94,7 +94,9 @@ html[data-ui] .notif-dot { box-shadow: 0 0 0 2px var(--surface); }
 @media (max-width: 1180px) { .sample-tag { display: none; } }
 
 /* ---- Page canvas ---- */
-html[data-ui] .page { padding: 22px 24px 48px; max-width: 1560px; }
+/* The page fills the space next to the sidebar up to 1920px wide. Beyond that (very wide or zoomed-out
+   screens) it stays 1920px and is centred, so cards keep their proportions instead of stretching. */
+html[data-ui] .page { padding: 22px 24px 48px; max-width: 1920px; margin-inline: auto; }
 .page-head { margin-bottom: 20px; }
 .page-head h1 { letter-spacing: -.01em; }
 .page-sub { margin: 4px 0 0; max-width: 720px; color: var(--text-2); font-size: var(--fs-body); line-height: 20px; }
