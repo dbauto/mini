@@ -374,11 +374,12 @@
 
   /* ============================================================ KPI definition editor (7 sections) */
   const SECTIONS = ['Basic Information', 'Scope', 'Target', 'Measurement', 'Collection', 'Responsibility', 'Review'];
-  K.editor = (k0, startAt = 0) => {
+  // preset (new KPIs only): fields to start from, e.g. { process } when opened from a process workspace.
+  K.editor = (k0, startAt = 0, preset = null) => {
     const isNew = !k0, S = Q.S;
     const k = JSON.parse(JSON.stringify(k0 || { id: (() => { let n = S.kpis.length + 1, id; do { id = `K-${String(n).padStart(2, '0')}`; n++; } while (S.kpis.some(x => x.id === id)); return id; })(),
       name: '', description: '', objective: S.objectives[0]?.name || '', objectiveId: S.objectives[0]?.id, process: Q.topProcesses()[0].process_id, department: '', owner: Q.me(), dataOwner: Q.me(), reviewer: Q.me() === 'maria' ? 'eric' : 'maria',
-      unit: '%', target: 90, dir: '≥', frequency: 'Monthly', aggregation: 'external', method: 'external', formula: '', minSample: null, active: true, iso: ['9.1.1'], notes: '', dims: [], hierarchy: [], actual: null, trend: [], period: '' }));
+      unit: '%', target: 90, dir: '≥', frequency: 'Monthly', aggregation: 'external', method: 'external', formula: '', minSample: null, active: true, iso: ['9.1.1'], notes: '', dims: [], hierarchy: [], actual: null, trend: [], period: '', ...(preset || {}) }));
     let step = startAt;
     const depts = [...new Set(Object.values(S.people).map(p => p.dept).filter(Boolean).concat(['Operations', 'Electrical']))].sort();
     const m = Q.openModal({ size: 'l', title: isNew ? 'New KPI' : `Edit KPI — ${esc(k0.name)}`, sub: isNew ? 'Define what is measured, how it is collected and who is responsible.' : esc(k0.id), body: '<div class="modal-body kp-ed"><nav class="kp-ed-nav" id="kpEdNav"></nav><div class="kp-ed-body" id="kpEdBody"></div></div>', foot: '<div class="kp-wz-foot" id="kpEdFoot"></div>' });
@@ -432,5 +433,5 @@
     draw();
   };
   Q.actions['kpi-edit'] = d => K.editor(kOf(d), +(d.step || 0));
-  Q.actions['kpi-new'] = () => K.editor(null);
+  Q.actions['kpi-new'] = d => K.editor(null, 0, d?.process && Q.proc(d.process) ? { process: d.process } : null);
 })();

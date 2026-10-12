@@ -562,18 +562,28 @@
   };
 
   /* =================== Documents in Review =================== */
-  const reviewTable = (id, seg) => {
+  /* Links into the queue (Overview tiles, Needs attention, My Work) use ?show= and ?due=:
+   *   show = mine | all | tech | changes | approval | publish   (a stage opens "All in progress" filtered to it)
+   *   due  = overdue | soon (within 7 days)                     — the same definitions the Overview counts with. */
+  const SHOW_STAGE = { tech: 'review', review: 'review', changes: 'changes', approval: 'approval', publish: 'publication', publication: 'publication' };
+  const DUE_SOON = 7;
+  const dueOf = r => !r.due ? 'none' : r.due < Q.today() ? 'overdue' : Q.days(Q.today(), r.due) <= DUE_SOON ? 'soon' : 'ok';
+  const reviewTable = (id, q = {}) => {
     const rows = () => Q.S.workflows.map(w => ({ ...w, d: Q.doc(w.doc) })).filter(r => r.d);
     const all = rows();
-    const segs = { mine: r => Q.assignedToMe(r), all: () => true, changes: r => r.changesRequested };
+    const segs = { mine: r => Q.assignedToMe(r), all: () => true };
+    const stageQ = SHOW_STAGE[q.show], dueQ = ['overdue', 'soon'].includes(q.due) ? q.due : '';
+    const seg = segs[q.show] ? q.show : stageQ || dueQ ? 'all' : Q.myWorkflows().length ? 'mine' : 'all';
+    const linked = q.show || q.due ? { stage: stageQ || 'all', due: dueQ || 'all' } : null;
     const tools = `${Q.seg('Show', [['mine', 'Assigned to me', all.filter(segs.mine).length], ['all', 'All in progress', all.length]], seg)}
-      <select class="select" data-filter="stage" aria-label="Workflow stage"><option value="all">All stages</option><option value="review">Review</option><option value="approval">Approval</option><option value="publication">Publication</option></select>
+      <select class="select" data-filter="stage" aria-label="Workflow stage"><option value="all">All stages</option><option value="review">Review</option><option value="changes">Changes requested</option><option value="approval">Approval</option><option value="publication">Publication</option></select>
+      <select class="select" data-filter="due" aria-label="Due date"><option value="all">Any due date</option><option value="overdue">Overdue</option><option value="soon">Due within ${DUE_SOON} days</option></select>
       <select class="select" data-filter="process" aria-label="Process">${Q.processOptions()}</select>`;
     return Q.table({
       id, rows, key: r => r.id, selectable: true, tight: true, noun: 'workflows', caption: 'Documents in review', rowLabel: r => r.d.title, tools, segDefault: seg,
       expand: r => `<div class="rt-expand"><h4>Routing activity · ${esc(r.d.id)} Rev ${esc(r.rev)}</h4>${Q.revTimeline(Q.wfTrail(Q.wf(r.id), (Q.S.revisions[r.d.id] || []).find(x => x.rev === r.rev)), { compact: true })}</div>`,
-      segs: { mine: segs.mine, all: segs.all }, initialSeg: seg,
-      filters: { stage: (r, v) => r.stage === v && !r.changesRequested, process: (r, v) => Q.inProc(r.d.process, v) },
+      segs, initialSeg: seg, ...(linked ? { initialFilters: linked } : {}),
+      filters: { stage: (r, v) => v === 'changes' ? !!r.changesRequested : r.stage === v && !r.changesRequested, due: (r, v) => dueOf(r) === v, process: (r, v) => Q.inProc(r.d.process, v) },
       columns: [
         { key: 'doc', label: 'Document', min: '200px', sort: r => r.d.title, render: r => `<span class="title">${esc(r.d.title)}</span><span class="sub tnum">${esc(r.d.id)}</span>` },
         { key: 'process', label: 'Process', sort: r => Q.proc(r.d.process)?.process_code, render: r => Q.pcell(r.d.process) },
@@ -588,7 +598,7 @@
         { key: 'status', label: 'Status', sort: r => Q.wfStatus(r), render: r => Q.st(Q.wfStatus(r)) },
         { key: 'act', label: 'Action', cls: 'c-actions', render: r => `<button class="btn sm ${Q.assignedToMe(r) ? 'primary' : ''}" type="button" data-action="open-review" data-id="${r.id}">Open Review</button>` }
       ],
-      empty: t => t.seg === 'mine' ? `<h3>No documents are currently awaiting your review.</h3><p>Items appear here when you are the current reviewer, approver or publisher.</p><button class="btn" type="button" data-show-all>View all in progress</button>` : '<h3>No documents are in review</h3><p>Start a review from a document’s working revision.</p>',
+      empty: t => t.seg === 'mine' && !Object.values(t.filters).some(v => v && v !== 'all') ? `<h3>No documents are currently awaiting your review.</h3><p>Items appear here when you are the current reviewer, approver or publisher.</p><button class="btn" type="button" data-show-all>View all in progress</button>` : Object.values(t.filters).some(v => v && v !== 'all') ? '<h3>Nothing matches these filters</h3><p>Change the stage, due date or process filter to see more.</p>' : '<h3>No documents are in review</h3><p>Start a review from a document’s working revision.</p>',
       after: host => host.querySelector('[data-show-all]')?.addEventListener('click', () => document.querySelector(`#tw-${id} [data-seg="all"]`).click()),
       selectionBar: keys => keys.length === 1 ? `<button class="btn sm primary" type="button" data-action="open-review" data-id="${keys[0]}">Open Review</button><button class="btn sm" type="button" data-action="open-doc" data-id="${Q.wf(keys[0]).doc}">Open Document</button>` : ''
     });
@@ -596,7 +606,7 @@
   Q.views.review = (parts, q) => {
     if (parts[0]) return Q.reviewPage(parts[0]);
     return { title: 'Routing · Documented Information', nav: 'review',
-      html: docHead([['Documented Information', '#/documents?view=list'], ['Routing']]) + Q.docTabs('routing') + `<p class="small muted" style="margin:-8px 0 16px">Each revision is routed <b style="color:var(--text)">Review → Approval → Publication</b>. One active route per document; the published revision stays in force until the new one is published.</p>` + reviewTable('wf', q.show || (Q.myWorkflows().length ? 'mine' : 'all')) };
+      html: docHead([['Documented Information', '#/documents?view=list'], ['Routing']]) + Q.docTabs('routing') + `<p class="small muted" style="margin:-8px 0 16px">Each revision is routed <b style="color:var(--text)">Review → Approval → Publication</b>. One active route per document; the published revision stays in force until the new one is published.</p>` + reviewTable('wf', q) };
   };
 
   /* =================== Document Review page (50:50 draggable split) =================== */

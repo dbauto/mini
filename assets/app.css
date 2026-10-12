@@ -3487,3 +3487,28 @@ a.ta-row:hover { background: var(--surface-2); text-decoration: none; }
 .ps-done { font-size: 12.5px; font-weight: 600; color: var(--success); }
 .ps-steps .btn svg { width: 14px; height: 14px; margin: 0 -2px 0 4px; }
 @media (max-width: 640px) { .ps-steps li { flex-wrap: wrap; } .ps-any { margin-left: 0; width: 100%; } }
+
+/* ---------- Update: tables stay inside their cards ---------- */
+/* Process names wrap to two lines instead of widening the column. */
+.bt-skin .dt a.proc { display: -webkit-box; max-width: 150px; white-space: normal; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-height: 18px; }
+.bt-skin .dt a.proc b { margin-right: 4px; }
+/* When a table is still wider than its card: fade the edge that has more columns and keep a thin scrollbar visible. */
+.table-scroll.sc-more { scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
+.table-scroll.sc-more::-webkit-scrollbar { width: 6px; height: 6px; }
+.table-scroll.sc-more::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 999px; }
+.table-scroll.sc-r { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 48px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 48px), transparent); }
+.table-scroll.sc-l { -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 48px), transparent); mask-image: linear-gradient(to left, #000 calc(100% - 48px), transparent); }
+.table-scroll.sc-l.sc-r { -webkit-mask-image: linear-gradient(to right, transparent, #000 48px, #000 calc(100% - 48px), transparent); mask-image: linear-gradient(to right, transparent, #000 48px, #000 calc(100% - 48px), transparent); }
+/* Owner names and date ranges may take two lines rather than widen the table. */
+.bt-skin .dt .user-cell .nowrap { white-space: normal; max-width: 120px; line-height: 18px; }
+.dt .c-date.c-range { white-space: normal; }
+.bt-skin .dt th:not(.c-check):not(.c-exp), .bt-skin .dt td:not(.c-check):not(.c-exp) { padding-left: 8px; padding-right: 8px; }
+
+/* ---------- Update: "Viewing as" (demo) lives in the top bar and applies to every page ---------- */
+.view-as-host { display: inline-flex; min-width: 0; }
+.view-as { display: inline-flex; align-items: center; gap: 6px; min-width: 0; font-size: var(--fs-small); color: var(--text-3); white-space: nowrap; }
+.view-as .va-l { display: inline-flex; align-items: center; gap: 4px; }
+.view-as .va-l svg { width: 15px; height: 15px; }
+.view-as .select, .view-as .combo-btn { height: 30px; width: auto; min-width: 0; max-width: 230px; font-size: var(--fs-small); }
+@media (max-width: 1100px) { .view-as .va-l span { display: none; } .view-as .select, .view-as .combo-btn { max-width: 170px; } }
+@media (max-width: 720px) { .view-as-host { display: none; } }

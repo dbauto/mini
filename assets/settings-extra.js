@@ -426,7 +426,7 @@
   /* =================== Data export & backup =================== */
   V.data = () => {
     const o = Q.S.organization;
-    const counts = [['Documents', Q.S.documents.length, '#/documents'], ['Risks & opportunities', Q.S.risks.length, '#/risks'], ['KPIs', Q.S.kpis.length, '#/qms/objectives'], ['Evidence records', Q.S.evidence.length, '#/evidence'], ['Audit findings', Q.S.findings.length, '#/audit/findings'], ['Corrective actions', Q.S.actions.length, '#/capa'], ['Users', Q.S.users.length, '#/settings/users']];
+    const counts = [['Documents', Q.S.documents.length, '#/documents'], ['Risks & opportunities', Q.S.risks.length, '#/risks'], ['KPIs', Q.S.kpis.length, '#/qms/objectives'], ['Evidence records', Q.S.evidence.length, '#/evidence'], ['Audit findings', Q.S.findings.length, '#/audits/nc?s=all'], ['Corrective actions', Q.S.actions.length, '#/capa'], ['Users', Q.S.users.length, '#/settings/users']];
     const backups = [0, 1, 2, 3, 4].map(n => [daysAgo(n), n === 0 ? '02:00' : '02:00', `${(412 - n * 3).toFixed(0)} MB`]);
     return { html: section('Data Export & Backup', 'Your data belongs to your organization. Take a full copy at any time.') +
       panel('Export everything', `<p>One JSON file with every record, the process structure, settings and the audit log. Uploaded files are listed by name; download them separately from the document library.</p>

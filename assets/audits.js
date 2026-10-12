@@ -230,13 +230,13 @@
    * In the product this is the signed-in user; the mock lets a reviewer switch role ("Viewing as"). */
   AM.actors = () => {
     const S = Q.S, out = new Map(), add = (id, r) => { if (S.people[id] && S.users.some(u => u.id === id && u.status !== 'Deactivated') && !out.has(id)) out.set(id, r); };
-    add(Q.me(), 'QMS Manager · Lead Auditor');
+    add(Q.S.currentUser, 'QMS Manager · Lead Auditor');
     (S.auditors || []).forEach(x => add(x.who, x.level === 'Observer' ? 'Approver · Observer' : x.level));
     Q.topProcesses().forEach(p => add(p.owner, `Process owner · ${p.name}`));
     add('jun', 'Viewer');
     return [...out.entries()];
   };
-  AM.actor = () => (Q.UI.auditActor && AM.actors().some(([id]) => id === Q.UI.auditActor) ? Q.UI.auditActor : Q.me());
+  AM.actor = () => Q.me(); // the app-wide identity (top-bar "Viewing as")
   const userRole = id => Q.S.users.find(u => u.id === id)?.role || '';
   AM.isQM = (who = AM.actor()) => ['QMS Manager', 'Administrator'].includes(userRole(who));
   AM.isLead = (a, who = AM.actor()) => a.auditor === who;
@@ -512,8 +512,8 @@
   /* ====================================================================== module chrome */
   const SECTIONS = [['overview', 'Overview', '#/audits'], ['programme', 'Programme', '#/audits/programme'], ['calendar', 'Calendar', '#/audits/calendar'], ['list', 'Audits', '#/audits/list'], ['nc', 'Nonconformities', '#/audits/nc'], ['reports', 'Reports', '#/audits/reports']];
   AM.tabs = (items, cur, label, cls = '') => `<div class="tabs ${cls}" role="tablist" aria-label="${esc(label)}">${items.map(([k, l, href, note]) => `<a role="tab" href="${href}" aria-selected="${k === cur}">${l}${note ? `<span class="tab-n">${note}</span>` : ''}</a>`).join('')}</div>`;
-  AM.actorSwitch = () => `<label class="actor-switch" title="Demo only: in the product this is the signed-in user. Switch to see what each role can do."><span>${icon('user-round')}Viewing as</span><select class="select" data-actor>${AM.actors().map(([id, r]) => `<option value="${id}"${id === AM.actor() ? ' selected' : ''}>${esc(Q.pname(id))} — ${esc(r)}</option>`).join('')}</select></label>`;
-  document.addEventListener('change', e => { const s = e.target.closest('[data-actor]'); if (!s) return; Q.UI.auditActor = s.value; Q.saveUI(); Q.render({ noFocus: true, keepScroll: true }); Q.toast('Viewing as ' + Q.pname(s.value), 'Actions on this page now follow that person’s role.'); });
+  // "Viewing as" moved to the top bar (account.js) so it applies to every page, not only Audits.
+  AM.actorSwitch = () => '';
   AM.chrome = (sec, { title, sub, actions = '', crumbs = null }) => Q.pageHead({ title, sub, crumbs, actions }) +
     `<div class="am-nav">${AM.tabs(SECTIONS.map(([k, l, h]) => [k, l, h, k === 'nc' ? AM.ncs().filter(AM.ncOpen).length || '' : '']), sec, 'Audit management')}${AM.actorSwitch()}</div>`;
   AM.createBtn = (extra = {}) => AM.can('create') ? `<a class="btn primary" href="#/audits/new${Object.keys(extra).length ? '?' + new URLSearchParams(extra) : ''}">${icon('plus')}Create Audit</a>` : '';
@@ -760,11 +760,11 @@
         { key: 'id', label: 'Audit No.', cls: 'c-id', sort: a => a.id, render: a => esc(a.id) },
         { key: 'p', label: 'Process', sort: a => Q.proc(a.process)?.display_order, render: a => Q.pcell(a.process) },
         { key: 't', label: 'Audit', sort: a => a.title, render: a => `<a class="title" href="#/audits/${a.status === 'Draft' ? `new?draft=${a.id}` : `a/${a.id}`}">${esc(a.title)}</a><span class="sub">${AM.triggerChip(a)}${a.programme ? ` · ${esc(AM.progName(a.programme))}` : ''}</span>` },
-        { key: 'd', label: 'Dates', cls: 'c-date', sort: a => AM.startDate(a) || '9', render: a => AM.dateRange(a) },
+        { key: 'd', label: 'Dates', cls: 'c-date c-range', sort: a => AM.startDate(a) || '9', render: a => AM.dateRange(a) },
         { key: 'l', label: 'Lead Auditor', sort: a => Q.pname(a.auditor), render: a => `<span class="nowrap">${esc(Q.pname(a.auditor))}</span><span class="sub">${(a.assignments || []).length} auditor${(a.assignments || []).length === 1 ? '' : 's'}</span>` },
         { key: 'c', label: 'Checklist', sort: a => AM.progress(a), render: a => a.checklist && AM.counted(a).length ? `${Q.miniProgress(AM.progress(a))}<span class="sub">${AM.counted(a).filter(AM.complete).length} / ${AM.counted(a).length}</span>` : '<span class="muted small">Not built</span>' },
         { key: 'f', label: 'Open NCs', cls: 'c-num', sort: a => AM.findingsOf(a.id).filter(AM.ncOpen).length, render: a => Q.num(AM.findingsOf(a.id).filter(AM.ncOpen).length) },
-        { key: 'r', label: 'Report', render: a => Q.st(a.report.status, AM.REPORT_KIND[a.report.status]) },
+        { key: 'r', label: 'Report', cls: 'hide-lg', render: a => Q.st(a.report.status, AM.REPORT_KIND[a.report.status]) },
         { key: 's', label: 'Status', sort: a => AM.STATUSES.indexOf(a.status), render: a => AM.badge(a) },
         { key: 'x', label: 'Actions', cls: 'c-actions', render: a => a.status === 'Draft' ? `<a class="btn sm" href="#/audits/new?draft=${a.id}">Continue Draft</a>` : `<a class="btn sm" href="#/audits/a/${a.id}">Open Audit</a>` }] });
     return { title: 'Audit Register · Audits', nav: 'audits', html: AM.chrome('list', { title: 'Audit Register', crumbs: [['Audits', '#/audits'], ['Audit Register']], sub: 'Every process audit — programme and triggered. One audit covers one process.', actions: `<a class="btn" href="#/audits/templates">${icon('clipboard-list')}Checklist Templates</a>` + AM.createBtn() }) + table };

@@ -325,7 +325,7 @@
         { label: 'Register Document', icon: 'file-plus', data: { action: 'connect-doc', process: pid } },
         { label: 'Link Evidence', icon: 'paperclip', data: { action: 'link-evidence', process: pid } },
         { label: 'Add Risk or Opportunity', icon: 'shield-alert', data: { action: 'assess-risk', process: pid } },
-        { label: 'Add KPI', icon: 'target', data: { action: 'toast', title: 'Add KPI', msg: 'KPI entry form is not part of this mock.' } },
+        { label: 'Add KPI', icon: 'target', data: { action: 'kpi-new', process: pid } },
         { label: 'Record Improvement Opportunity', icon: 'route', data: { action: 'add-improvement', process: pid } }
       ], { icon: 'plus', text: 'Add', cls: 'btn' }) + `<a class="btn" href="#/settings/processes?select=${pid}">${icon('pencil')}Edit Process</a>` });
     // Saved views inside the process: same views as the main page, filtered to this process.
@@ -378,7 +378,7 @@
       { icon: 'list-checks', title: 'Map ISO 9001 clauses', note: 'Which requirements this process is responsible for. Drives ISO readiness and audit suggestions.', done: (p.iso || []).length > 0, btn: 'Map Clauses', href: `#/qms/processes?view=clauses&area=${pid}` },
       { icon: 'workflow', title: 'Define inputs, outputs and roles', note: 'The process definition required by clause 4.4.1', done: (p.inputs || []).length > 0 && (p.outputs || []).length > 0, btn: 'Edit Process', href: `#/settings/processes?select=${pid}` },
       { icon: 'file-text', title: 'Register its documents', note: 'Procedures, forms and work instructions', done: Q.S.documents.some(inP), btn: 'Register Document', action: 'connect-doc' },
-      { icon: 'target', title: 'Add objectives and KPIs', note: 'How the process is measured', done: Q.S.kpis.some(inP), btn: 'Open KPIs', href: `#/process/${pid}/kpis` },
+      { icon: 'target', title: 'Add objectives and KPIs', note: 'How the process is measured', done: Q.S.kpis.some(inP), btn: 'Add KPI', action: 'kpi-new' },
       { icon: 'shield-alert', title: 'Identify risks and opportunities', note: 'Clause 6.1', done: Q.S.risks.some(inP), btn: 'Add Risk', action: 'assess-risk' }];
   };
   Q.procSettingUp = p => !!p?.setup && (!(p.process_id || p.id) || Q.procSetupSteps(p).some(x => !x.done));
