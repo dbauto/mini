@@ -47,7 +47,9 @@
   Q.icon = (name, cls = '') => `<i data-lucide="${name}"${cls ? ` class="${cls}"` : ''}></i>`;
   Q.refreshIcons = () => { if (window.lucide) window.lucide.createIcons(); };
   Q.today = () => Q.S.organization.today;
-  Q.me = () => Q.S.currentUser;
+  // One identity for the whole app. Q.S.currentUser is the signed-in user; the demo-only "Viewing as" control
+  // in the top bar (Q.UI.viewAs) lets a reviewer act as another person. Every page reads Q.me().
+  Q.me = () => (Q.UI.viewAs && Q.S.people?.[Q.UI.viewAs] && Q.S.users?.some(u => u.id === Q.UI.viewAs && u.status !== 'Deactivated') ? Q.UI.viewAs : Q.S.currentUser);
   Q.person = id => Q.S.people[id] || { name: id || '—', title: '', dept: '' };
   Q.pname = id => id ? Q.person(id).name : '—';
   Q.initials = id => Q.pname(id).split(' ').map(s => s[0]).slice(0, 2).join('');
@@ -252,6 +254,19 @@
     const last = pts[pts.length - 1];
     return `<svg class="spark" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" aria-hidden="true"><polyline fill="none" stroke="#9AA5A0" stroke-width="1.5" points="${pts.map(p => p.map(n => n.toFixed(1)).join(',')).join(' ')}"/><circle cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="2.8" fill="${ok ? 'var(--success)' : 'var(--danger)'}"/></svg>`;
   };
+
+  /* ---------------- Scroll cues ----------------
+   * A table wider than its card fades out at the edge that has more columns and shows a thin scrollbar,
+   * so columns are never cut off without a sign. Re-checked on render, scroll and resize. */
+  const cue = el => {
+    const more = el.scrollWidth - el.clientWidth > 2;
+    el.classList.toggle('sc-more', more);
+    el.classList.toggle('sc-l', more && el.scrollLeft > 2);
+    el.classList.toggle('sc-r', more && el.scrollLeft < el.scrollWidth - el.clientWidth - 2);
+  };
+  Q.scrollCues = (root = document) => requestAnimationFrame(() => root.querySelectorAll('.table-scroll').forEach(cue));
+  document.addEventListener('scroll', e => { if (e.target.classList?.contains('table-scroll')) cue(e.target); }, true);
+  let cueT = 0; window.addEventListener('resize', () => { clearTimeout(cueT); cueT = setTimeout(() => Q.scrollCues(), 100); });
 
   /* ---------------- Toast ---------------- */
   // opts.actions: [{ label, href } | { label, action, data }] — buttons under the message (toast then stays 9s; a click closes it).
@@ -483,7 +498,7 @@
       ? `<div class="table-scroll"><table class="dt${c.tight ? ' tight' : ''}${exp ? ' has-exp' : ''}"><caption class="sr-only">${esc(c.caption || c.id)}</caption><thead><tr${selHead ? ' class="sel-mode"' : ''}>${selHead || head}</tr></thead><tbody>${body}</tbody></table></div>${foot}`
       : `<div class="empty">${empty || '<h3>No matching records</h3><p>Try clearing a filter.</p>'}</div>`;
     const cnt = document.querySelector(`#tw-${CSS.escape(id)} [data-tw-count]`); if (cnt) cnt.textContent = all.length;
-    Q.refreshIcons();
+    Q.refreshIcons(); Q.scrollCues(host);
     if (before) host.querySelectorAll('tbody tr[data-key]').forEach(tr => {
       const y0 = before.get(tr.dataset.key); if (y0 == null) { tr.classList.add('row-in'); return; }
       const dy = y0 - tr.getBoundingClientRect().top; if (!dy) return;

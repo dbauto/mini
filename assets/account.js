@@ -257,7 +257,22 @@
   }
 
   /* ---------- Boot hook: branding, notification dot ---------- */
+  /* ---------- "Viewing as" (demo only) ----------
+   * In the product this is the signed-in user. The mock lets a reviewer act as someone else to see what each
+   * role can do; it changes Q.me() for every page (My Work, routing, audits, notifications). */
+  const viewAsList = () => Q.AM?.actors ? Q.AM.actors() : Q.S.users.filter(u => u.status !== 'Deactivated').map(u => [u.id, u.role]);
+  Q.renderViewAs = () => {
+    const host = document.getElementById('viewAs'); if (!host) return;
+    host.innerHTML = `<label class="view-as" title="Demo only: in the product this is the signed-in user. Switch to see what each role can do."><span class="va-l">${icon('user-round')}<span>Viewing as</span></span><select class="select" data-view-as aria-label="Viewing as (demo)">${viewAsList().map(([id, r]) => `<option value="${id}"${id === Q.me() ? ' selected' : ''}>${esc(Q.pname(id))} — ${esc(r)}</option>`).join('')}</select></label>`;
+    Q.enhanceSelects?.(host); Q.refreshIcons();
+  };
+  document.addEventListener('change', e => {
+    const s = e.target.closest('[data-view-as]'); if (!s) return;
+    Q.UI.viewAs = s.value === Q.S.currentUser ? null : s.value; delete Q.UI.auditActor; Q.saveUI();
+    Q.renderSidebar(); Q.render({ noFocus: true }); Q.renderViewAs(); Q.syncNotifDot?.();
+    Q.toast(`Viewing as ${Q.pname(Q.me())}`, 'Every page now shows what this person sees and can do.');
+  });
   const boot = Q.boot;
-  Q.boot = () => { Q.applyBranding?.(); boot(); Q.syncNotifDot(); };
+  Q.boot = () => { if (Q.UI.auditActor && !Q.UI.viewAs) { Q.UI.viewAs = Q.UI.auditActor; delete Q.UI.auditActor; } Q.applyBranding?.(); boot(); Q.syncNotifDot(); Q.renderViewAs(); };
   window.addEventListener('hashchange', () => Q.syncNotifDot());
 })();

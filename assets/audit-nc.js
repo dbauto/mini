@@ -54,16 +54,16 @@
       filters: { audit: (f, v) => f.audit === v, area: (f, v) => Q.inProc(f.process, v), clause: (f, v) => Q.clauseIn(f.clause, v), auditor: (f, v) => f.auditor === v, owner: (f, v) => f.nc.owner === v, cls: (f, v) => f.nc.classification === v },
       columns: [
         { key: 'no', label: 'NC Number', cls: 'c-id', sort: f => f.nc.no, render: f => `${esc(f.nc.no)}<span class="sub">${esc(f.id)}</span>` },
-        { key: 'audit', label: 'Audit', sort: f => f.audit, render: f => `<a class="tnum nowrap" href="#/audits/a/${f.audit}">${esc(f.audit)}</a>` },
-        { key: 'area', label: 'Process', sort: f => Q.proc(f.process)?.process_code, render: f => `<span class="nowrap">${esc(Q.proc(f.process)?.name)}</span>` },
+        { key: 'audit', label: 'Audit', cls: 'hide-lg', sort: f => f.audit, render: f => `<a class="tnum nowrap" href="#/audits/a/${f.audit}">${esc(f.audit)}</a>` },
+        { key: 'area', label: 'Process', sort: f => Q.proc(f.process)?.process_code, render: f => Q.pcell(f.process) },
         { key: 'cl', label: 'ISO Clause', sort: f => Q.clauseSort(f.clause), render: f => `<span class="clause">${esc(f.clause)}</span>` },
         { key: 't', label: 'Nonconformity', sort: f => f.title, render: f => `<span class="title">${esc(f.title)}</span>` },
         { key: 'k', label: 'Classification', sort: f => f.nc.classification, render: clsBadge },
         { key: 'o', label: 'Responsible Owner', sort: f => Q.pname(f.nc.owner), render: f => `<span class="nowrap">${esc(Q.pname(f.nc.owner))}</span>` },
-        { key: 'r', label: 'Date Raised', cls: 'c-date', sort: f => f.raised, render: f => Q.fmt(f.raised) },
+        { key: 'r', label: 'Date Raised', cls: 'c-date hide-lg', sort: f => f.raised, render: f => Q.fmt(f.raised) },
         { key: 'd', label: 'Due Date', cls: 'c-date', sort: f => f.nc.due, render: f => Q.dueDate(f.nc.due, ['Verification Required', 'Verified', 'Closed'].includes(f.nc.status)) },
-        { key: 's', label: 'Status', sort: f => AM.NC_STATUSES.indexOf(f.nc.status), render: ncSt },
-        { key: 'l', label: 'Last Activity', sort: f => f.nc.last || '', render: f => `<span class="nowrap small">${esc(AM.ago(f.nc.last))}</span>${AM.ncBadges(f)}` },
+        { key: 's', label: 'Status', sort: f => AM.NC_STATUSES.indexOf(f.nc.status), render: f => `${ncSt(f)}${AM.ncBadges(f)}` },
+        { key: 'l', label: 'Last Activity', cls: 'hide-lg', sort: f => f.nc.last || '', render: f => `<span class="nowrap small">${esc(AM.ago(f.nc.last))}</span>` },
         { key: 'x', label: 'Actions', cls: 'c-actions', render: f => `<a class="btn sm" href="#/audits/nc/${f.nc.no}">Open NC</a>` }],
       empty: t => t.seg === 'open' ? '<h3>No open nonconformities</h3><p>Everything raised has been verified and closed.</p>' : '<h3>No matching nonconformities</h3><p>Try clearing a filter.</p>' });
     return { title: 'Nonconformities · Audits', nav: 'audits', html: head + strip + vt + table };
