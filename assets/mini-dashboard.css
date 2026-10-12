@@ -17,6 +17,34 @@
 }
 .page-sub { margin:4px 0 0; max-width:720px; color:var(--text-2); font-size:13px; line-height:20px; }
 
+/* Branch-wide layout hardening.
+ * The main iQMS stylesheet caps pages at 1680px. On wide/zoomed-out displays that leaves a large
+ * unused strip at the right and makes grids look as if flex/grid sizing is broken. Keep every page
+ * fluid up to the 1920px canvas used by Mini, centre only beyond that, and allow nested flex/grid
+ * children to actually shrink/stretch instead of forcing narrow columns. */
+.page {
+  width: 100%;
+  max-width: 1920px;
+  margin-inline: auto;
+  box-sizing: border-box;
+}
+.main, #main, .page,
+.settings-layout, .settings-main,
+.grid-halves, .grid-2, .grid-main,
+.section-head, .panel, .table-wrap {
+  min-width: 0;
+}
+.settings-layout { width: 100%; }
+.settings-main { width: 100%; }
+.grid-halves, .grid-2, .grid-main { width: 100%; }
+.grid-halves > *, .grid-2 > *, .grid-main > * { min-width: 0; }
+.section-head .actions, .page-head .actions { flex-shrink: 0; }
+
+@media (max-width: 720px) {
+  .page { width: 100%; max-width: none; }
+}
+
+
 /* iQMS Mini V1 — Dashboard.
  *
  * Extends the existing `ui-` kit (UI.card, UI.list, UI.info, .btn, .avatar) and consumes only tokens
