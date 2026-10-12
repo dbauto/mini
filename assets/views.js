@@ -369,15 +369,36 @@
     ...Q.S.evidence.filter(e => Q.inProc(e.process, pid) && Q.evGap(e)).map(e => ({ icon: 'paperclip', title: e.name, meta: `Control: ${e.control} · ISO ${e.iso}`, kind: 'Evidence', owner: Q.proc(e.process)?.owner, action: 'link-evidence', data: { process: e.process, control: e.control, name: e.name, replace: e.id }, right: Q.ui.badge(e.status === 'Missing' ? 'Missing' : 'Unavailable', 'warning'), tone: 'warning', w: 5 })),
     ...Q.S.workflows.filter(w => Q.inProc(Q.doc(w.doc)?.process, pid)).map(w => ({ icon: 'file-check', title: `${Q.doc(w.doc).title} Rev ${w.rev}`, meta: `Waiting for ${Q.wfAssignees(w).map(Q.pname).join(', ')}`, kind: 'Document review', owner: Q.wfAssignees(w)[0], due: w.due, href: `#/review/${w.id}`, right: Q.ui.badge(Q.wfStatus(w), 'info'), w: 6 }))
   ].sort((x, y) => x.w - y.w);
+  /* Set-up checklist for a process added in the app (setup: true). Shown on its Summary until every
+   * step is done or someone hides it; the card and register show "Setting up" meanwhile. */
+  Q.procSetupSteps = p => {
+    const pid = p.process_id || p.id, inP = x => Q.inProc(x.process, pid);
+    return [
+      { icon: 'circle-check', title: 'Name, owner, category and card', note: 'Done when the process was added', done: true },
+      { icon: 'list-checks', title: 'Map ISO 9001 clauses', note: 'Which requirements this process is responsible for. Drives ISO readiness and audit suggestions.', done: (p.iso || []).length > 0, btn: 'Map Clauses', href: `#/qms/processes?view=clauses&area=${pid}` },
+      { icon: 'workflow', title: 'Define inputs, outputs and roles', note: 'The process definition required by clause 4.4.1', done: (p.inputs || []).length > 0 && (p.outputs || []).length > 0, btn: 'Edit Process', href: `#/settings/processes?select=${pid}` },
+      { icon: 'file-text', title: 'Register its documents', note: 'Procedures, forms and work instructions', done: Q.S.documents.some(inP), btn: 'Register Document', action: 'connect-doc' },
+      { icon: 'target', title: 'Add objectives and KPIs', note: 'How the process is measured', done: Q.S.kpis.some(inP), btn: 'Open KPIs', href: `#/process/${pid}/kpis` },
+      { icon: 'shield-alert', title: 'Identify risks and opportunities', note: 'Clause 6.1', done: Q.S.risks.some(inP), btn: 'Add Risk', action: 'assess-risk' }];
+  };
+  Q.procSettingUp = p => !!p?.setup && (!(p.process_id || p.id) || Q.procSetupSteps(p).some(x => !x.done));
+  Q.actions['proc-setup-hide'] = d => { const p = Q.proc(d.process); if (!p) return; p.setup = false; Q.save(); Q.render({ noFocus: true }); Q.toast('Checklist hidden', 'The process now shows its normal status.'); };
+  const setupPanel = p => {
+    const pid = p.process_id, steps = Q.procSetupSteps(p), done = steps.filter(x => x.done).length;
+    return `<div class="ps-setup"><div class="ps-head"><h3>Set up ${esc(p.name)}</h3>${Q.ui.badge(`${done} of ${steps.length} done`, 'success')}<span class="small muted ps-any">Do these in any order</span><button class="btn sm" type="button" data-action="proc-setup-hide" data-process="${pid}">Hide checklist</button></div>
+      <div class="ps-bar" role="img" aria-label="${done} of ${steps.length} set-up steps done"><i style="width:${Math.round(done / steps.length * 100)}%"></i></div>
+      <ol class="ps-steps">${steps.map(x => `<li class="${x.done ? 'done' : ''}"><span class="ps-ic" aria-hidden="true">${icon(x.done ? 'circle-check' : x.icon)}</span><div class="ps-main"><b>${esc(x.title)}</b><span>${esc(x.note)}</span></div>${x.done ? '<span class="ps-done">Done</span>'
+        : x.href ? `<a class="btn sm" href="${x.href}">${esc(x.btn)}${icon('chevron-right')}</a>` : `<button class="btn sm" type="button" data-action="${x.action}" data-process="${pid}">${esc(x.btn)}${icon('chevron-right')}</button>`}</li>`).join('')}</ol></div>`;
+  };
   function processSummary(p, s, kids) {
-    const pid = p.process_id, [hl, hk] = HEALTH[s.health] || HEALTH.ok, S = Q.S, inP = x => Q.inProc(x.process, pid);
+    const pid = p.process_id, settingUp = Q.procSettingUp(p), [hl, hk] = settingUp ? ['Setting up', 'info'] : HEALTH[s.health] || HEALTH.ok, S = Q.S, inP = x => Q.inProc(x.process, pid);
     const pct = (n, t) => t ? Math.round(n / t * 100) : 100;
     const docs = S.documents.filter(inP), ev = S.evidence.filter(inP), kp = S.kpis.filter(inP), ca = S.actions.filter(inP);
     const iso = Q.isoForProcess(pid), isoPct = Q.isoScore(iso).pct ?? 0;
     const bar = (label, n, t, note, tab) => ({ label, pct: pct(n, t), value: t ? `${n}/${t}` : '—', note, href: `#/process/${pid}/${tab}`, tone: t && n < t ? (pct(n, t) < 50 ? 'danger' : 'warning') : '' });
     return Q.ui.summary({
       stats: [
-        { label: 'Process health', value: hl, icon: 'activity', tone: hk === 'success' ? null : hk, note: s.findings ? `${s.findings} open audit finding${s.findings === 1 ? '' : 's'}` : 'no open findings', href: `#/process/${pid}/audit` },
+        { label: 'Process health', value: hl, icon: 'activity', tone: hk === 'success' ? null : hk, note: settingUp ? `${Q.procSetupSteps(p).filter(x => x.done).length} of 6 set-up steps done` : s.findings ? `${s.findings} open audit finding${s.findings === 1 ? '' : 's'}` : 'no open findings', href: `#/process/${pid}/audit` },
         { label: 'Documents overdue', value: s.docsOverdue, icon: 'files', tone: s.docsOverdue ? 'danger' : null, note: `of ${s.docs} documents`, href: `#/process/${pid}/documents` },
         { label: 'High risks', value: s.highRisks, icon: 'shield-alert', tone: s.highRisks ? 'danger' : null, note: `${s.openRisks} open risks & opportunities`, href: `#/process/${pid}/risks` },
         { label: 'KPIs below target', value: s.kpisBelow, icon: 'target', tone: s.kpisBelow ? 'warning' : null, note: `of ${s.kpis} KPIs`, href: `#/process/${pid}/kpis` }],
@@ -389,6 +410,7 @@
           bar('Evidence linked', ev.filter(e => !Q.evGap(e)).length, ev.length, 'no missing links', 'evidence'),
           bar('KPIs on target', kp.filter(Q.kpiOk).length, kp.length, kp[0] ? kp[0].period : 'no KPIs', 'kpis'),
           bar('Actions on time', ca.filter(a => !Q.actionOverdue(a)).length, ca.length, 'corrective actions', 'audit')] },
+      main: settingUp ? setupPanel(p) : '',
       attention: Q.processAttention(pid), search: 'Search documents, risks, KPIs…', empty: 'Nothing needs attention. Documents are current, KPIs are on target and evidence is linked.',
       action: `<button class="btn primary" type="button" data-action="link-evidence" data-process="${pid}">${icon('link')}Link Evidence</button>` });
   }

@@ -182,9 +182,10 @@
   const render0 = Q.render; Q.render = (o = {}) => { render0(o); UI.fitBoards(); };
 
   // Summary tab: { stats (max 4), breakdown, attention rows, action, empty, title }
-  UI.summary = ({ stats = [], breakdown = null, attention = [], action = '', empty = 'Nothing needs attention.', title = 'Needs attention', search }) =>
+  // main: optional HTML that replaces the attention table (e.g. a new process's set-up checklist).
+  UI.summary = ({ stats = [], breakdown = null, attention = [], action = '', empty = 'Nothing needs attention.', title = 'Needs attention', search, main = '' }) =>
     `<div class="ui-board"><aside class="ui-board-side">${stats.slice(0, 4).map(UI.tile).join('')}${breakdown ? UI.breakdown(breakdown) : ''}</aside>
-      <section class="ui-board-main">${UI.btable({ title, rows: attention, action, empty, search })}</section></div>`;
+      <section class="ui-board-main">${main || UI.btable({ title, rows: attention, action, empty, search })}</section></div>`;
 
   // Keyboard support for role="button" rows.
   document.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches?.('a.ui-row[role="button"]')) { e.preventDefault(); e.target.click(); } });

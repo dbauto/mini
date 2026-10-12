@@ -132,9 +132,10 @@
   }
   function processesPage(q) {
     // Old links (?view=table) set the display once; the Cards/Register switch remembers it after that.
-    if (q.view) { Q.UI.procView = q.view === 'table' ? 'table' : 'map'; Q.saveUI(); location.replace('#/qms/processes'); return { title: 'Processes', nav: 'qms', html: '' }; }
+    // ?view=clauses keeps the clause-matrix filters (?area= / ?clause=) in the address.
+    if (q.view) { Q.UI.procView = ['table', 'clauses'].includes(q.view) ? q.view : 'map'; Q.saveUI(); const keep = new URLSearchParams(q); keep.delete('view'); location.replace('#/qms/processes' + (keep.toString() ? '?' + keep : '')); return { title: 'Processes', nav: 'qms', html: '' }; }
     return Q.pageView('processes', { title: 'Processes', nav: 'qms', crumbs: qmsCrumbs('Processes'), sub: 'The processes of the QMS and how they interact — ISO 9001 clause 4.4. Open a process for its documents, risks, KPIs, evidence and audits.',
-      actions: `<a class="btn" href="#/settings/processes">${icon('network')}Edit Process Structure</a>`, customize: false });
+      actions: `<a class="btn" href="#/settings/processes">${icon('network')}Edit Process Structure</a><button class="btn primary" type="button" data-action="add-process" data-from="processes">${icon('plus')}Add Process</button>`, customize: false });
   }
 
   /* ---------------- Organization & context components ---------------- */
@@ -266,11 +267,32 @@
   })();
 
   /* ---------------- Processes component ---------------- */
-  Q.actions['proc-view'] = d => { Q.UI.procView = d.view; Q.saveUI(); Q.render({ noFocus: true }); };
+  Q.actions['proc-view'] = d => { Q.UI.procView = d.view; Q.saveUI(); if (location.hash.includes('?')) location.hash = '#/qms/processes'; else Q.render({ noFocus: true }); };
+  /* Process card (gradient 3D card). Shared by the Processes page and the live preview in Add Process.
+   * p: process with id and s (Q.stats). opts.preview renders a non-interactive copy; opts.fresh marks a just-added card. */
+  const CARD_STATUS = { ok: ['On track', 'success'], attn: ['Needs attention', 'warning'], risk: ['At risk', 'danger'] };
+  Q.processCard = (p, i, { preview = false, fresh = false } = {}) => {
+    const setup = Q.procSettingUp?.(p);
+    const [label, tone] = setup ? ['Setting up', 'info'] : CARD_STATUS[p.s.health] || CARD_STATUS.ok;
+    const pct = Math.max(0, Math.min(100, p.s.iso.pct || 0));
+    const clauses = p.iso || [], visibleClauses = clauses.slice(0, 3), moreClauses = Math.max(0, clauses.length - visibleClauses.length);
+    const col = Q.cardColor(preview ? p : Q.proc(p.id), i);
+    const tag = preview ? 'div' : 'a', hid = preview ? 'pc-preview' : `pc-${p.id}`;
+    return `<${tag} class="proc-card pc2 fx-card fx-${esc(col[0])}${fresh ? ' pc-fresh' : ''}${preview ? ' pc-preview' : ''}" style="${Q.cardColorVars(col)}" ${preview ? 'aria-hidden="true"' : `href="#/process/${p.id}"`} aria-labelledby="${hid}">
+        <span class="fx-sheen" aria-hidden="true"></span>
+        <span class="fx-top"><span class="pc2-icon" aria-hidden="true">${icon(p.icon || 'landmark')}</span>${fresh ? '<span class="pc-fresh-badge">Just added</span>' : ''}<span class="fx-dot ${tone}" title="${esc(label)}" aria-hidden="true"></span></span>
+        <span class="fx-body">
+          <h3 id="${hid}">${esc(p.name || 'New process')}</h3>
+          <p class="pc2-desc" title="${esc(p.purpose || '')}">${esc(p.purpose || 'What this process achieves')}</p>
+          <span class="fx-ready"><span class="pc2-progress" role="img" aria-label="ISO readiness ${pct}%"><i style="width:${pct}%"></i></span><b class="tnum">${pct}%</b><small>ISO readiness</small></span>
+          <span class="pc2-tags" aria-label="Process tags"><span class="pc2-tag code">${esc(p.process_code || '—')}</span><span class="pc2-tag status-${tone}">${esc(label)}</span>${clauses.length ? visibleClauses.map(c => `<span class="pc2-tag">${esc(c)}</span>`).join('') + (moreClauses ? `<span class="pc2-tag">+${moreClauses}</span>` : '') : '<span class="pc2-tag">No clauses yet</span>'}</span>
+        </span>
+      </${tag}>`;
+  };
   Q.component('process-map', { group: 'Objectives & processes', name: 'Processes', icon: 'workflow', desc: 'Every process as a card or as a register table, with status and ISO readiness.',
     render: () => processMap() });
   function processMap() {
-    const view = Q.UI.procView === 'table' ? 'table' : 'map';
+    const view = ['table', 'clauses'].includes(Q.UI.procView) ? Q.UI.procView : 'map';
     const tops = Q.topProcesses().map(p => ({ ...p, id: p.process_id, s: Q.stats(p.process_id) }));
     // Process card: type + status · name, purpose, Open · team avatars + ISO readiness.
     const STATUS = { ok: ['On track', 'ok'], attn: ['Needs attention', 'attn'], risk: ['At risk', 'risk'] };
@@ -291,21 +313,8 @@
     const trend = (up, good, text, val) => `<span class="pc-trend ${good ? 'good' : 'bad'}">${arrow(up)}<span>${esc(text)}</span>${val ? `<b>${esc(val)}</b>` : ''}</span>`;
     const metric = (label, value, ringHtml, trendHtml) => `<span class="pc-metric"><span class="pc-m-label" title="${esc(label)}">${esc(label)}</span><span class="pc-m-main"><b class="tnum">${esc(String(value))}</b></span>${trendHtml}</span>`;
     // Update 20g: gradient 3D cards (same content: icon, name, purpose, ISO readiness, code, status, clauses).
-    const card = (p, i) => {
-      const [label] = STATUS[p.s.health], tone = TONE[p.s.health], pct = Math.max(0, Math.min(100, p.s.iso.pct || 0));
-      const clauses = p.iso || [], visibleClauses = clauses.slice(0, 3), moreClauses = Math.max(0, clauses.length - visibleClauses.length);
-      const col = Q.cardColor(Q.proc(p.id), i);
-      return `<a class="proc-card pc2 fx-card fx-${esc(col[0])}" style="${Q.cardColorVars(col)}" href="#/process/${p.id}" aria-labelledby="pc-${p.id}">
-        <span class="fx-sheen" aria-hidden="true"></span>
-        <span class="fx-top"><span class="pc2-icon" aria-hidden="true">${icon(p.icon || 'landmark')}</span><span class="fx-dot ${tone}" title="${esc(label)}" aria-hidden="true"></span></span>
-        <span class="fx-body">
-          <h3 id="pc-${p.id}">${esc(p.name)}</h3>
-          <p class="pc2-desc" title="${esc(p.purpose)}">${esc(p.purpose)}</p>
-          <span class="fx-ready"><span class="pc2-progress" role="img" aria-label="ISO readiness ${pct}%"><i style="width:${pct}%"></i></span><b class="tnum">${pct}%</b><small>ISO readiness</small></span>
-          <span class="pc2-tags" aria-label="Process tags"><span class="pc2-tag code">${esc(p.process_code)}</span><span class="pc2-tag status-${tone}">${esc(label)}</span>${visibleClauses.map(c => `<span class="pc2-tag">${esc(c)}</span>`).join('')}${moreClauses ? `<span class="pc2-tag">+${moreClauses}</span>` : ''}</span>
-        </span>
-      </a>`;
-    };
+    const fresh = Q.justAddedProcess && Date.now() - Q.justAddedProcess.at < 15000 ? Q.justAddedProcess.id : null;
+    const card = (p, i) => Q.processCard(p, i, { fresh: p.id === fresh });
     /* Legacy dense-card renderer retained below for reference during migration. */
     const legacyCard = p => {
       const s = p.s, [label, cls] = STATUS[s.health], tone = TONE[s.health], pct = s.iso.pct;
@@ -356,22 +365,23 @@
         ${list.length ? `<div class="pc-grid">${list.map(card).join('')}</div>` : `<div class="cat-empty">No processes in this category yet. <a href="#/settings/processes">Add or move a process</a></div>`}</section>`;
     };
     // One grid of process cards in display order (no category grouping on this page).
-    const map = `<div class="proc-showcase"><div class="pc-grid pc2-grid">${tops.map(card).join('')}</div></div>`;
+    const addTile = `<button class="pc-add" type="button" data-action="add-process" data-from="processes"><span class="pc-add-ic" aria-hidden="true">${icon('plus')}</span><b>Add a process</b><span>Name it, choose an owner and a category. Map ISO clauses later.</span></button>`;
+    const map = `<div class="proc-showcase"><div class="pc-grid pc2-grid">${tops.map(card).join('')}${addTile}</div></div>`;
     const table = Q.table({ id: 'qmsproc', rows: () => tops, key: r => r.id, noun: 'processes', caption: 'Process register',
       columns: [
         { key: 'name', label: 'Process', sort: r => r.display_order, render: r => `<a class="proc" href="#/process/${r.id}"><b>${esc(r.process_code)}</b><span class="title">${esc(r.name)}</span></a>` },
         { key: 'cat', label: 'Category', sort: r => Q.categories().findIndex(c => c.id === Q.catOf(r)?.id), render: r => Q.catChip(Q.catOf(r)) },
         { key: 'owner', label: 'Owner', sort: r => Q.pname(r.owner), render: r => `<span class="nowrap">${esc(Q.pname(r.owner))}</span>` },
         { key: 'iso', label: 'ISO 9001', render: r => `<span class="small tnum">${esc(r.iso.join(', '))}</span>` },
-        { key: 'health', label: 'Status', sort: r => ({ risk: 0, attn: 1, ok: 2 })[r.s.health], render: r => Q.health(r.s.health) },
+        { key: 'health', label: 'Status', sort: r => Q.procSettingUp?.(r) ? 3 : ({ risk: 0, attn: 1, ok: 2 })[r.s.health], render: r => Q.procSettingUp?.(r) ? Q.ui.badge('Setting up', 'info') : Q.health(r.s.health) },
         { key: 'docs', label: 'Documents', cls: 'c-num', sort: r => r.s.docs, render: r => `<a href="#/documents?view=process&p=${r.id}">${r.s.docs}</a>` },
         { key: 'kpi', label: 'KPIs off target', cls: 'c-num', sort: r => r.s.kpisBelow, render: r => Q.num(r.s.kpisBelow, 'warnv') },
         { key: 'risk', label: 'High risks', cls: 'c-num', sort: r => r.s.highRisks, render: r => Q.num(r.s.highRisks) },
         { key: 'isor', label: 'ISO readiness', sort: r => r.s.iso.pct ?? -1, render: r => Q.miniProgress(r.s.iso.pct) }
       ] });
-    return `<div style="display:flex;gap:12px;align-items:center;margin-bottom:16px;flex-wrap:wrap">${Q.seg('View', [['map', 'Cards'], ['table', 'Register']], view).replace(/data-seg=/g, 'data-action="proc-view" data-view=')}
+    return `<div style="display:flex;gap:12px;align-items:center;margin-bottom:16px;flex-wrap:wrap">${Q.seg('View', [['map', 'Cards'], ['table', 'Register'], ['clauses', 'ISO Clauses']], view).replace(/data-seg=/g, 'data-action="proc-view" data-view=')}
         <span class="small muted">${tops.length} processes · ${tops.filter(p => p.s.health !== 'ok').length} need attention</span></div>` +
-      (view === 'table' ? table : map);
+      (view === 'table' ? table : view === 'clauses' ? Q.clauseMatrix(Q.route().q) : map);
   }
 
   /* ---------- Objectives & KPIs — same saved-views design as Documented Information ---------- */

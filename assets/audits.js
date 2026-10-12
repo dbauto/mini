@@ -774,13 +774,17 @@
    * Rows are processes (top level), columns the clauses any process maps to. Audits read it as suggestions. */
   let mxEdit = null;
   Q.settingsViews = Q.settingsViews || {};
-  Q.settingsViews['clause-map'] = q => {
+  // The matrix is shown in Settings → Process ↔ ISO Clauses and on QMS → Processes (ISO Clauses view).
+  // Both read and write the same mapping; filters stay on whichever page you are on.
+  Q.settingsViews['clause-map'] = q => ({ html: Q.clauseMatrix(q) });
+  Q.clauseMatrix = (q = {}) => {
+    const onProcesses = Q.route().parts[0] === 'qms';
     const procs = Q.topProcesses(), cols = [...new Set([...procs.flatMap(p => p.iso || []), ...(q.addc ? [q.addc] : [])])].sort(AM.clSort);
     const map = mxEdit || Object.fromEntries(procs.map(p => [p.process_id, (p.iso || []).slice()]));
     const groups = [...new Set(cols.map(c => c.split('.')[0]))];
     const selA = q.area || '', selC = q.clause || '', canEdit = AM.can('configure');
     const answer = selA ? `<b>${esc(Q.proc(selA)?.name)}</b>: ${map[selA].slice().sort(AM.clSort).map(c => `<span class="clause">${esc(c)}</span>`).join(', ') || 'no clauses mapped'}` : selC ? `<b>Clause ${esc(selC)}</b> ${esc(AM.clTitle(selC))}: ${procs.filter(p => map[p.process_id].some(c => fam(c, selC))).map(p => esc(p.process_code + ' ' + p.name)).join(', ') || 'no process responsible'}` : 'Choose a process to see its clauses, or a clause to see which processes are responsible for it.';
-    return { html: `<section class="panel"><div class="panel-head"><h2>Process ↔ ISO 9001 clauses</h2><span class="muted small">Master data</span></div><div class="panel-pad"><p class="small muted" style="margin:0 0 12px">The clauses each process is responsible for. When an audit of a process is created, these are loaded as <b>Suggested from Process Configuration</b>; each audit can add or remove clauses for itself. The same list appears as “ISO 9001 clauses” in Process Structure.</p>
+    return `<section class="panel mx-panel"><div class="panel-head"><h2>Process ↔ ISO 9001 clauses</h2><span class="muted small">Master data${onProcesses ? ' · also in <a href="#/settings/clause-map">Settings</a>' : ''}</span></div><div class="panel-pad"><p class="small muted" style="margin:0 0 12px">The clauses each process is responsible for. When an audit of a process is created, these are loaded as <b>Suggested from Process Configuration</b>; each audit can add or remove clauses for itself. The same list appears as “ISO 9001 clauses” in Process Structure.</p>
       <div class="mx-tools"><label class="field"><span>What clauses apply to this process?</span><select class="select" data-mx="area"><option value="">Choose a process…</option>${procs.map(p => `<option value="${p.process_id}"${p.process_id === selA ? ' selected' : ''}>${esc(p.process_code + ' ' + p.name)}</option>`).join('')}</select></label>
         <label class="field"><span>What processes are responsible for this clause?</span><select class="select" data-mx="clause"><option value="">Choose a clause…</option>${Object.keys(AM.CL).sort(AM.clSort).map(c => `<option value="${c}"${c === selC ? ' selected' : ''}>${esc(c + ' ' + AM.CL[c])}</option>`).join('')}</select></label>
         <div class="mx-actions">${canEdit ? (mxEdit ? `<button class="btn" type="button" data-mx-cancel>Cancel</button><button class="btn primary" type="button" data-mx-save>Save Mapping</button>` : `<button class="btn" type="button" data-mx-edit>${icon('pencil')}Edit Mapping</button>`) : '<span class="small muted">Only the QMS Manager can change the mapping.</span>'}</div></div>
@@ -790,9 +794,9 @@
         <tr>${cols.map(c => `<th class="mx-c${selC && fam(c, selC) ? ' hl' : ''}" scope="col" title="${esc(c + ' ' + AM.clTitle(c))}"><button type="button" class="link-btn" data-mx-col="${c}">${esc(c)}</button></th>`).join('')}</tr></thead>
         <tbody>${procs.map(p => `<tr class="${selA === p.process_id ? 'hl' : ''}"><th class="c-sticky" scope="row"><button type="button" class="link-btn mx-row" data-mx-row="${p.process_id}"><b class="tnum">${esc(p.process_code)}</b> ${esc(p.name)}</button></th>${cols.map(c => { const on = map[p.process_id].includes(c); return `<td class="mx-cell${selC && fam(c, selC) ? ' hl' : ''}">${mxEdit ? `<input type="checkbox" class="row-check" data-mxp="${p.process_id}" data-mxc="${c}" ${on ? 'checked' : ''} aria-label="${esc(p.name)} — clause ${c}">` : on ? `<span class="mx-on" aria-label="mapped">✓</span>` : ''}</td>`; }).join('')}<td class="c-num tnum">${map[p.process_id].length}</td></tr>`).join('')}</tbody>
         <tfoot><tr><th class="c-sticky" scope="row">Processes per clause</th>${cols.map(c => { const n = procs.filter(p => map[p.process_id].includes(c)).length; return `<td class="c-num tnum${n ? '' : ' mx-gap'}">${n}</td>`; }).join('')}<td></td></tr></tfoot></table></div>
-      ${mxEdit ? `<div class="mx-add panel-pad"><label class="field"><span>Add a clause column</span><select class="select" data-mx-addc><option value="">Choose a clause…</option>${Object.keys(AM.CL).filter(c => !cols.includes(c)).sort(AM.clSort).map(c => `<option value="${c}">${esc(c + ' ' + AM.CL[c])}</option>`).join('')}</select></label></div>` : ''}</section>` };
+      ${mxEdit ? `<div class="mx-add panel-pad"><label class="field"><span>Add a clause column</span><select class="select" data-mx-addc><option value="">Choose a clause…</option>${Object.keys(AM.CL).filter(c => !cols.includes(c)).sort(AM.clSort).map(c => `<option value="${c}">${esc(c + ' ' + AM.CL[c])}</option>`).join('')}</select></label></div>` : ''}</section>`;
   };
-  const mxGo = o => { const { q } = Q.route(); const p = new URLSearchParams({ ...q, ...o }); Object.entries(o).forEach(([k, v]) => { if (!v) p.delete(k); }); location.hash = '#/settings/clause-map?' + p; };
+  const mxGo = o => { const { q } = Q.route(); const p = new URLSearchParams({ ...q, ...o }); Object.entries(o).forEach(([k, v]) => { if (!v) p.delete(k); }); location.hash = location.hash.split('?')[0] + '?' + p; };
   document.addEventListener('change', e => {
     const s = e.target.closest('[data-mx]'); if (s) { mxGo({ area: '', clause: '', [s.dataset.mx]: s.value }); return; }
     const c = e.target.closest('[data-mxp]'); if (c && mxEdit) { const l = mxEdit[c.dataset.mxp]; c.checked ? l.push(c.dataset.mxc) : l.splice(l.indexOf(c.dataset.mxc), 1); return; }

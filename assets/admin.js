@@ -128,8 +128,11 @@
     const sibs = Q.S.processes.filter(x => x.parent_process_id === (parent?.process_id || null));
     const order = Math.max(0, ...sibs.map(x => x.display_order)) + 1;
     const code = parent ? `${parent.process_code}.${order}` : String(order).padStart(2, '0');
+    const fromProcesses = d.from === 'processes';
+    // Live card preview (top-level processes only — subprocesses have no card of their own).
+    const preview = parent || !Q.processCard ? '' : `<div class="pc-preview-wrap"><div class="pc-preview-slot"></div><p><b>Card preview</b>Updates as you type. This is how the process appears on QMS → Processes.<br><br>You can map ISO clauses, inputs and outputs after adding it.</p></div>`;
     const m = Q.openModal({ size: 'm', title: parent ? `Add ${L[1]} to ${esc(parent.name)}` : `Add ${L[0]}`,
-      body: `<form class="modal-body"><div class="form-grid">
+      body: `<form class="modal-body">${preview}<div class="form-grid">
         <label class="field"><span>Display code <span class="req">*</span></span><input class="input tnum" name="code" required value="${esc(code)}"></label>
         <label class="field"><span>Name <span class="req">*</span></span><input class="input" name="name" required autofocus></label>
         <label class="field"><span>Process owner <span class="req">*</span></span><select class="select" name="owner" required>${Q.peopleOptions(parent?.owner || Q.me())}</select></label>
@@ -139,12 +142,27 @@
         <div class="field full"><span>Card colour</span><div class="swatches card-colors" role="radiogroup" aria-label="Card colour"><label title="Auto — colours follow process order"><input type="radio" name="cardColor" value="" checked aria-label="Auto"><span class="cc-auto">Auto</span></label>${Q.CARD_COLORS.map(c => `<label title="${c[1]}"><input type="radio" name="cardColor" value="${c[0]}" aria-label="${c[1]}"><span style="background:linear-gradient(140deg, ${c[2]}, ${c[3]})"></span></label>`).join('')}</div><span class="help">Choose a card colour or use Auto.</span></div>
         <label class="field full"><span>Purpose</span><textarea class="textarea" name="purpose" placeholder="What this process achieves"></textarea></label></div></form>`,
       foot: `<button class="btn" type="button" data-close>Cancel</button><button class="btn primary" type="button" data-ok>Add</button>` });
+    const slot = m.querySelector('.pc-preview-slot');
+    if (slot) {
+      const draw = () => { const v = Q.formValues(m.querySelector('form'));
+        slot.innerHTML = Q.processCard({ name: v.name, purpose: v.purpose, process_code: v.code, icon: v.processIcon, cardColor: v.cardColor || undefined, iso: [], setup: true, s: { health: 'ok', iso: { pct: 0 } } }, Q.topProcesses().length, { preview: true }); Q.refreshIcons(); };
+      m.querySelector('form').addEventListener('input', draw); m.querySelector('form').addEventListener('change', draw); draw();
+    }
     m.querySelector('[data-ok]').addEventListener('click', () => {
       const f = m.querySelector('form'); if (!Q.validate(f)) return; const v = Q.formValues(f);
       if (Q.S.processes.some(x => x.process_code === v.code)) { Q.toast('Code already used', 'Choose a unique display code.'); return; }
       const id = Q.uid('p');
-      Q.S.processes.push({ process_id: id, organization_id: Q.S.organization.organization_id, parent_process_id: parent?.process_id || null, display_order: order, process_code: v.code, name: v.name, owner: v.owner, department: v.department, icon: v.processIcon || 'landmark', ...(v.cardColor ? { cardColor: v.cardColor } : {}), iso: [], purpose: v.purpose || '', inputs: [], outputs: [], roles: [], elements: [], status: 'active', category: parent ? parent.category : v.category });
-      selected = id; Q.save(); Q.closeAllModals(); Q.renderSidebar(); Q.go('#/settings/processes'); Q.render({ noFocus: true }); Q.toast(`${L[parent ? 1 : 0]} added`, `${v.code} ${v.name} now appears in navigation.`);
+      // setup: true shows the set-up checklist in the new process's workspace until it is done or dismissed.
+      Q.S.processes.push({ process_id: id, organization_id: Q.S.organization.organization_id, parent_process_id: parent?.process_id || null, display_order: order, process_code: v.code, name: v.name, owner: v.owner, department: v.department, icon: v.processIcon || 'landmark', ...(v.cardColor ? { cardColor: v.cardColor } : {}), iso: [], purpose: v.purpose || '', inputs: [], outputs: [], roles: [], elements: [], status: 'active', category: parent ? parent.category : v.category, setup: true });
+      selected = id; Q.save(); Q.closeAllModals(); Q.renderSidebar(); Q.audit?.('Settings', `added process ${v.code} ${v.name}`);
+      if (fromProcesses) {
+        // Stay on QMS → Processes: the new card is highlighted and the toast offers the next step.
+        Q.justAddedProcess = { id, at: Date.now() }; Q.render({ noFocus: true });
+        document.querySelector('.pc-fresh')?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        Q.toast(`${L[parent ? 1 : 0]} added`, `${v.code} ${v.name} is on the Processes page and in navigation.`, { actions: [{ label: 'Open workspace', href: `#/process/${id}`, primary: true }, { label: 'Add another', action: 'add-process', data: { from: 'processes' } }] });
+        return;
+      }
+      Q.go('#/settings/processes'); Q.render({ noFocus: true }); Q.toast(`${L[parent ? 1 : 0]} added`, `${v.code} ${v.name} now appears in navigation.`);
     });
   };
 

@@ -254,13 +254,20 @@
   };
 
   /* ---------------- Toast ---------------- */
-  Q.toast = (title, msg = '') => {
+  // opts.actions: [{ label, href } | { label, action, data }] — buttons under the message (toast then stays 9s; a click closes it).
+  Q.toast = (title, msg = '', { actions = [] } = {}) => {
     const host = document.getElementById('toastHost');
     const el = document.createElement('div');
     el.className = 'toast'; el.setAttribute('role', 'status');
-    el.innerHTML = `${Q.icon('circle-check')}<div><b>${esc(title)}</b>${esc(msg)}</div>`;
+    const btns = actions.map(a => {
+      const cls = `btn sm${a.primary ? ' primary' : ''}`;
+      if (a.href) return `<a class="${cls}" href="${esc(a.href)}">${esc(a.label)}</a>`;
+      return `<button class="${cls}" type="button" data-action="${esc(a.action)}" ${Object.entries(a.data || {}).map(([k, v]) => `data-${k}="${esc(v)}"`).join(' ')}>${esc(a.label)}</button>`;
+    }).join('');
+    el.innerHTML = `${Q.icon('circle-check')}<div><b>${esc(title)}</b>${esc(msg)}${btns ? `<span class="toast-actions">${btns}</span>` : ''}</div>`;
+    if (btns) el.addEventListener('click', e => { if (e.target.closest('a, button')) setTimeout(() => el.remove()); });
     host.append(el); Q.refreshIcons();
-    setTimeout(() => el.remove(), 4200);
+    setTimeout(() => el.remove(), btns ? 9000 : 4200);
   };
 
   /* ---------------- Modals (stackable, focus-trapped) ---------------- */
