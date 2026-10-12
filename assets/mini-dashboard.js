@@ -228,13 +228,13 @@
     });
 
     const html = UI.pageHeader({
-      title: 'Dashboard', sub: 'Document control activity and items requiring attention.',
+      title: 'Overview', sub: 'Document control activity and items requiring attention.',
       actions: `<button class="btn" type="button" data-action="export-tasks" title="Download the revisions in progress as a CSV file">${icon('download')}Export</button>
         <button class="btn primary" type="button" data-action="connect-doc">${icon('file-plus')}New / Revise Document</button>`
     }) + `<div class="dash-wrap"><div class="dash">
         <div class="dash-kpis">${metrics.map(UI.metric).join('')}</div>
         ${workflow}${needs}${health}${myWork}${activity}
       </div></div>`;
-    return { title: 'Dashboard', nav: 'overview', html };
+    return { title: 'Overview', nav: 'overview', html };
   };
 })();
