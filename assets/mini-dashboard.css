@@ -13,6 +13,7 @@
   --stage-changes: #D9992B;
   --stage-published: color-mix(in srgb, var(--accent) 72%, #000000);
   --track: #E9EDEB;
+  --dash-gap: 16px;
 }
 .page-sub { margin:4px 0 0; max-width:720px; color:var(--text-2); font-size:13px; line-height:20px; }
 
@@ -99,8 +100,9 @@ html[data-ui] .ui-metric.feature { background: var(--feature-bg); border-color: 
 /* ============================================================== 2. Dashboard */
 /* Laid out against the page width (not the viewport) so it adapts when the sidebar is pinned. */
 .dash-wrap { container: dash / inline-size; }
-.dash { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--gap); }
-.dash-kpis { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--gap); }
+.dash { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--dash-gap); align-items: stretch; }
+.dash-kpis { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--dash-gap); }
+.dash > .ui-card, .dash-kpis > .ui-metric { min-width: 0; height: 100%; }
 .dash-wf { grid-column: span 5; }
 .dash-attn { grid-column: span 4; }
 .dash-health { grid-column: span 3; }
