@@ -136,12 +136,21 @@
         <label class="field"><span>Display code <span class="req">*</span></span><input class="input tnum" name="code" required value="${esc(code)}"></label>
         <label class="field"><span>Name <span class="req">*</span></span><input class="input" name="name" required autofocus></label>
         <label class="field"><span>Process owner <span class="req">*</span></span><select class="select" name="owner" required>${Q.peopleOptions(parent?.owner || Q.me())}</select></label>
-        ${parent ? '' : `<label class="field"><span>Category <span class="req">*</span></span><select class="select" name="category" required>${Q.categories().map(c => `<option value="${c.id}"${c.id === d.category ? ' selected' : ''}>${esc(c.name)} — ${esc(c.description)}</option>`).join('')}</select></label>`}
+        ${parent ? '' : `<label class="field"><span>Category <span class="req">*</span></span><select class="select" name="category" required>${Q.categories().map(c => `<option value="${c.id}"${c.id === d.category ? ' selected' : ''}>${esc(c.name)}</option>`).join('')}</select><span class="help" data-category-help></span></label>`}
         <label class="field"><span>Department</span><input class="input" name="department" value="${esc(parent?.department || '')}"></label>
         <div class="field full"><span>Process icon</span><div class="swatches icons process-icons" role="radiogroup" aria-label="Process icon">${PROCESS_ICONS.map((x, i) => `<label><input type="radio" name="processIcon" value="${x}" ${i === 0 ? 'checked' : ''} aria-label="${x}"><span>${icon(x)}</span></label>`).join('')}</div><span class="help">Choose an icon for the process card.</span></div>
         <div class="field full"><span>Card colour</span><div class="swatches card-colors" role="radiogroup" aria-label="Card colour"><label title="Auto — colours follow process order"><input type="radio" name="cardColor" value="" checked aria-label="Auto"><span class="cc-auto">Auto</span></label>${Q.CARD_COLORS.map(c => `<label title="${c[1]}"><input type="radio" name="cardColor" value="${c[0]}" aria-label="${c[1]}"><span style="background:linear-gradient(140deg, ${c[2]}, ${c[3]})"></span></label>`).join('')}</div><span class="help">Choose a card colour or use Auto.</span></div>
         <label class="field full"><span>Purpose</span><textarea class="textarea" name="purpose" placeholder="What this process achieves"></textarea></label></div></form>`,
       foot: `<button class="btn" type="button" data-close>Cancel</button><button class="btn primary" type="button" data-ok>Add</button>` });
+    const catSelect = m.querySelector('select[name="category"]');
+    const catHelp = m.querySelector('[data-category-help]');
+    const updateCategoryHelp = () => {
+      if (!catSelect || !catHelp) return;
+      const cat = Q.categories().find(c => c.id === catSelect.value);
+      catHelp.textContent = cat?.description || '';
+    };
+    catSelect?.addEventListener('change', updateCategoryHelp);
+    updateCategoryHelp();
     const slot = m.querySelector('.pc-preview-slot');
     if (slot) {
       const draw = () => { const v = Q.formValues(m.querySelector('form'));
